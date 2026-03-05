@@ -5,6 +5,7 @@ export const empfehlungCreateSchema = z.object({
   kunde_kontakt: z.string().max(200).optional(),
   empfehler_name: z.string().min(1, "Name ist erforderlich").max(120),
   empfehler_email: z.email("Ungültige E-Mail-Adresse").max(200),
+  handwerker_id: z.string().uuid("Ungültige Partner-ID"),
   ref_code: z
     .string()
     .regex(/^#SEE-\d{4}-[A-Z0-9]{4,6}$/, "Ungültiges Ref-Code Format")

@@ -1,8 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
+import { empfehlungCreateSchema } from "@/lib/validators";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 
 const VALID_STATUSES = ["offen", "erledigt", "ausgezahlt"] as const;
+
+// POST /api/admin/empfehlungen — create new empfehlung (admin)
+export async function POST(request: NextRequest) {
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json(
+      { error: "Ungültiger Request-Body" },
+      { status: 400 }
+    );
+  }
+
+  const parsed = empfehlungCreateSchema.safeParse(body);
+  if (!parsed.success) {
+    const fieldErrors = parsed.error.issues.map(
+      (issue) => `${issue.path.join(".")}: ${issue.message}`
+    );
+    return NextResponse.json(
+      { error: "Validierungsfehler", detail: fieldErrors.join("; ") },
+      { status: 400 }
+    );
+  }
+
+  const adminClient = createAdminClient();
+
+  // Auto-generate ref_code
+  let refCode = parsed.data.ref_code;
+  if (!refCode) {
+    const { data: generated } = await adminClient.rpc("generate_ref_code");
+    refCode = generated as string;
+  }
+
+  const { data, error } = await adminClient
+    .from("empfehlungen")
+    .insert({
+      ...parsed.data,
+      ref_code: refCode,
+    })
+    .select("*, handwerker:handwerker_id(id, name, email, provision_prozent)")
+    .single();
+
+  if (error) {
+    return NextResponse.json(
+      { error: "Empfehlung konnte nicht erstellt werden", detail: error.message },
+      { status: 500 }
+    );
+  }
+
+  await logAudit({
+    userId: "admin",
+    action: "empfehlung.created",
+    targetType: "empfehlung",
+    targetId: data.id,
+    details: { kunde_name: parsed.data.kunde_name, ref_code: refCode },
+    ipAddress: request.headers.get("x-forwarded-for"),
+  });
+
+  return NextResponse.json(data, { status: 201 });
+}
 
 // PATCH /api/admin/empfehlungen — update empfehlung status
 export async function PATCH(request: NextRequest) {
