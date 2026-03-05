@@ -2,12 +2,13 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { LayoutDashboard, Users, CreditCard, LogOut } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, Mail, LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/handwerker", label: "Handwerker", icon: Users },
   { href: "/admin/payouts", label: "Auszahlungen", icon: CreditCard },
+  { href: "/admin/emails", label: "E-Mails", icon: Mail },
 ];
 
 export function DesktopSidebar() {
