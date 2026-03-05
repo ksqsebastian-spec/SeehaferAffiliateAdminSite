@@ -98,19 +98,12 @@ export async function PATCH(request: NextRequest) {
 
   const adminClient = createAdminClient();
 
-  // Get current empfehlung for audit + provision calc
+  // Get current empfehlung for audit + provision calc (non-blocking)
   const { data: before } = await adminClient
     .from("empfehlungen")
-    .select("*, handwerker:handwerker_id(provision_prozent)")
+    .select("status, handwerker:handwerker_id(provision_prozent)")
     .eq("id", id)
     .single();
-
-  if (!before) {
-    return NextResponse.json(
-      { error: "Empfehlung nicht gefunden" },
-      { status: 404 }
-    );
-  }
 
   const updateData: Record<string, unknown> = {};
 
@@ -127,7 +120,7 @@ export async function PATCH(request: NextRequest) {
     if (status === "ausgezahlt") {
       updateData.ausgezahlt_am = new Date().toISOString();
     }
-    if (status !== "ausgezahlt" && before.status === "ausgezahlt") {
+    if (status !== "ausgezahlt" && before?.status === "ausgezahlt") {
       updateData.ausgezahlt_am = null;
     }
   }
@@ -143,8 +136,8 @@ export async function PATCH(request: NextRequest) {
     }
     updateData.rechnungsbetrag = betrag;
 
-    const provisionProzent =
-      (before.handwerker as { provision_prozent: number })?.provision_prozent ?? 5;
+    const hw = before?.handwerker as unknown as { provision_prozent: number } | null;
+    const provisionProzent = hw?.provision_prozent ?? 5;
     updateData.provision_betrag = berechneProvision(betrag, provisionProzent);
   }
 

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { Search, Check, X, Pencil } from "lucide-react";
 import type { EmpfehlungWithHandwerker, EmpfehlungStatus, Handwerker } from "@/types";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
-import { formatDate, formatCurrency, berechneProvision } from "@/lib/utils";
+import { formatDate, formatCurrency } from "@/lib/utils";
 
 const STATUS_FILTERS: { label: string; value: EmpfehlungStatus | ""; color: string }[] = [
   { label: "Alle", value: "", color: "#050234" },
@@ -41,15 +41,29 @@ export default function EmpfehlungenPage() {
     empfehler_email: "",
   });
 
-  // Inline editing
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editFields, setEditFields] = useState<Record<string, string>>({});
+  // Edit mode — shows form card for editing an existing entry
+  const [editingEmp, setEditingEmp] = useState<EmpfehlungWithHandwerker | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    handwerker_id: "",
+    kunde_kontakt: "",
+    empfehler_name: "",
+    empfehler_email: "",
+  });
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   // Inline betrag editing
   const [editingBetragId, setEditingBetragId] = useState<string | null>(null);
   const [editBetrag, setEditBetrag] = useState("");
 
+  // Prevent fetchData from overwriting optimistic status updates
+  const skipNextFetch = useRef(false);
+
   const fetchData = useCallback(async () => {
+    if (skipNextFetch.current) {
+      skipNextFetch.current = false;
+      return;
+    }
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -151,16 +165,20 @@ export default function EmpfehlungenPage() {
         body: JSON.stringify({ id, status: newStatus }),
       });
       if (!res.ok) {
-        // Revert on error
+        // Revert on error by re-fetching
         fetchData();
+        return;
       }
+      // Success — re-fetch to get server state (ausgezahlt_am, etc.)
+      // Small delay to ensure DB has committed
+      setTimeout(() => fetchData(), 200);
     } catch {
       fetchData();
     }
   }
 
   async function handleDelete(emp: EmpfehlungWithHandwerker) {
-    if (!confirm(`Empfehlung von "${emp.kunde_name}" wirklich löschen?`)) return;
+    if (!confirm(`"${emp.empfehler_name}" wirklich löschen?`)) return;
 
     try {
       const res = await fetch(`/api/admin/empfehlungen?id=${emp.id}`, {
@@ -202,38 +220,49 @@ export default function EmpfehlungenPage() {
   }
 
   function startEditing(emp: EmpfehlungWithHandwerker) {
-    setEditingId(emp.id);
-    setEditFields({
+    setEditingEmp(emp);
+    setEditFormData({
+      handwerker_id: emp.handwerker?.id ?? "",
+      kunde_kontakt: emp.kunde_kontakt ?? "",
       empfehler_name: emp.empfehler_name,
       empfehler_email: emp.empfehler_email,
-      handwerker_id: emp.handwerker?.id ?? "",
     });
+    setEditError("");
+    setShowForm(false);
   }
 
-  async function saveEditing(empId: string) {
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingEmp) return;
+    setEditLoading(true);
+    setEditError("");
+
     try {
       const res = await fetch("/api/admin/empfehlungen", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          id: empId,
-          empfehler_name: editFields.empfehler_name,
-          empfehler_email: editFields.empfehler_email,
-          handwerker_id: editFields.handwerker_id,
-          kunde_name: handwerker.find((h) => h.id === editFields.handwerker_id)?.name ?? undefined,
+          id: editingEmp.id,
+          empfehler_name: editFormData.empfehler_name,
+          empfehler_email: editFormData.empfehler_email,
+          handwerker_id: editFormData.handwerker_id,
+          kunde_kontakt: editFormData.kunde_kontakt || undefined,
+          kunde_name: handwerker.find((h) => h.id === editFormData.handwerker_id)?.name ?? undefined,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || "Fehler beim Speichern");
+        setEditError(data.error || "Fehler beim Speichern");
         return;
       }
 
-      setEditingId(null);
+      setEditingEmp(null);
       fetchData();
     } catch {
-      alert("Netzwerkfehler");
+      setEditError("Netzwerkfehler");
+    } finally {
+      setEditLoading(false);
     }
   }
 
@@ -248,15 +277,172 @@ export default function EmpfehlungenPage() {
 
   const cellStyle = { padding: "14px 16px" };
 
+  // Shared form card renderer for both create and edit
+  function renderForm(
+    mode: "create" | "edit",
+    data: typeof formData,
+    setData: (d: typeof formData) => void,
+    onSubmit: (e: React.FormEvent) => void,
+    isLoading: boolean,
+    error: string,
+    bankdaten: boolean,
+    setBankdaten: (v: boolean) => void,
+    onCancel: () => void,
+  ) {
+    return (
+      <Card style={{ borderLeft: "5px solid var(--orange)", borderRadius: "20px", boxShadow: "0 4px 20px rgba(242,137,0,0.1)" }}>
+        <form
+          onSubmit={onSubmit}
+          style={{ display: "flex", flexDirection: "column", gap: "18px" }}
+        >
+          <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--navy)" }}>
+            {mode === "create" ? "Neuen Affiliate erstellen" : "Affiliate bearbeiten"}
+          </h2>
+          {error && (
+            <div
+              role="alert"
+              style={{
+                color: "var(--red)",
+                fontSize: "14px",
+                fontWeight: 600,
+                backgroundColor: "var(--red-bg)",
+                padding: "12px 16px",
+                borderRadius: "12px",
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  color: "var(--navy)",
+                  marginBottom: "8px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                Partner
+              </label>
+              <select
+                value={data.handwerker_id}
+                onChange={(e) => setData({ ...data, handwerker_id: e.target.value })}
+                required
+                style={{
+                  width: "100%",
+                  padding: "14px 18px",
+                  border: "2px solid var(--border)",
+                  borderRadius: "14px",
+                  fontSize: "15px",
+                  fontWeight: 500,
+                  backgroundColor: "white",
+                  color: "var(--text)",
+                  cursor: "pointer",
+                }}
+              >
+                <option value="">Partner auswählen...</option>
+                {handwerker.map((hw) => (
+                  <option key={hw.id} value={hw.id}>
+                    {hw.name} ({hw.provision_prozent}%)
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Input
+              label="Kontakt (optional)"
+              value={data.kunde_kontakt}
+              onChange={(e) => setData({ ...data, kunde_kontakt: e.target.value })}
+              placeholder="E-Mail oder Telefon"
+            />
+            <Input
+              label="Affiliate Name"
+              value={data.empfehler_name}
+              onChange={(e) => setData({ ...data, empfehler_name: e.target.value })}
+              required
+            />
+            <Input
+              label="Affiliate E-Mail (PayPal)"
+              type="email"
+              value={data.empfehler_email}
+              onChange={(e) => setData({ ...data, empfehler_email: e.target.value })}
+              required
+            />
+          </div>
+
+          {/* Bankdaten Checkbox */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+              fontSize: "14px",
+              fontWeight: 600,
+              color: "var(--navy)",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={bankdaten}
+              onChange={(e) => setBankdaten(e.target.checked)}
+              style={{
+                width: "20px",
+                height: "20px",
+                accentColor: "var(--orange)",
+                cursor: "pointer",
+              }}
+            />
+            Bankdaten hinzufügen
+          </label>
+
+          {bankdaten && (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "18px",
+                padding: "18px",
+                backgroundColor: "#f8f7f4",
+                borderRadius: "14px",
+                border: "2px solid var(--border)",
+              }}
+            >
+              <Input label="IBAN" placeholder="DE89 3704 0044 0532 0130 00" />
+              <Input label="BIC" placeholder="COBADEFFXXX" />
+              <Input label="Kontoinhaber" placeholder="Name des Kontoinhabers" />
+              <Input label="Bank" placeholder="Name der Bank" />
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: "12px" }}>
+            <Button type="submit" loading={isLoading} size="lg" style={{ flex: 1 }}>
+              {mode === "create" ? "Affiliate erstellen" : "Änderungen speichern"}
+            </Button>
+            <Button type="button" variant="ghost" size="lg" onClick={onCancel}>
+              Abbrechen
+            </Button>
+          </div>
+        </form>
+      </Card>
+    );
+  }
+
   return (
     <div className="animate-fadeIn" style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: "32px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
           Affiliate
         </h1>
-        <Button onClick={() => setShowForm(!showForm)} size="lg">
-          {showForm ? "Abbrechen" : "+ Neuer Affiliate"}
-        </Button>
+        {!editingEmp && (
+          <Button onClick={() => { setShowForm(!showForm); setEditingEmp(null); }} size="lg">
+            {showForm ? "Abbrechen" : "+ Neuer Affiliate"}
+          </Button>
+        )}
       </div>
 
       {/* Stat Cards */}
@@ -273,154 +459,34 @@ export default function EmpfehlungenPage() {
       </div>
 
       {/* Create Form */}
-      {showForm && (
-        <Card style={{ borderLeft: "5px solid var(--orange)", borderRadius: "20px", boxShadow: "0 4px 20px rgba(242,137,0,0.1)" }}>
-          <form
-            onSubmit={handleCreate}
-            style={{ display: "flex", flexDirection: "column", gap: "18px" }}
-          >
-            <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--navy)" }}>
-              Neuen Affiliate erstellen
-            </h2>
-            {formError && (
-              <div
-                role="alert"
-                style={{
-                  color: "var(--red)",
-                  fontSize: "14px",
-                  fontWeight: 600,
-                  backgroundColor: "var(--red-bg)",
-                  padding: "12px 16px",
-                  borderRadius: "12px",
-                }}
-              >
-                {formError}
-              </div>
-            )}
+      {showForm && !editingEmp &&
+        renderForm(
+          "create",
+          formData,
+          setFormData,
+          handleCreate,
+          formLoading,
+          formError,
+          showBankdaten,
+          setShowBankdaten,
+          () => setShowForm(false),
+        )
+      }
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    color: "var(--navy)",
-                    marginBottom: "8px",
-                    textTransform: "uppercase",
-                    letterSpacing: "0.5px",
-                  }}
-                >
-                  Partner
-                </label>
-                <select
-                  value={formData.handwerker_id}
-                  onChange={(e) => setFormData({ ...formData, handwerker_id: e.target.value })}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "14px 18px",
-                    border: "2px solid var(--border)",
-                    borderRadius: "14px",
-                    fontSize: "15px",
-                    fontWeight: 500,
-                    backgroundColor: "white",
-                    color: "var(--text)",
-                    cursor: "pointer",
-                  }}
-                >
-                  <option value="">Partner auswählen...</option>
-                  {handwerker.map((hw) => (
-                    <option key={hw.id} value={hw.id}>
-                      {hw.name} ({hw.provision_prozent}%)
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <Input
-                label="Kontakt (optional)"
-                value={formData.kunde_kontakt}
-                onChange={(e) => setFormData({ ...formData, kunde_kontakt: e.target.value })}
-                placeholder="E-Mail oder Telefon"
-              />
-              <Input
-                label="Affiliate Name"
-                value={formData.empfehler_name}
-                onChange={(e) => setFormData({ ...formData, empfehler_name: e.target.value })}
-                required
-              />
-              <Input
-                label="Affiliate E-Mail (PayPal)"
-                type="email"
-                value={formData.empfehler_email}
-                onChange={(e) => setFormData({ ...formData, empfehler_email: e.target.value })}
-                required
-              />
-            </div>
-
-            {/* Bankdaten Checkbox */}
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                cursor: "pointer",
-                fontSize: "14px",
-                fontWeight: 600,
-                color: "var(--navy)",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={showBankdaten}
-                onChange={(e) => setShowBankdaten(e.target.checked)}
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  accentColor: "var(--orange)",
-                  cursor: "pointer",
-                }}
-              />
-              Bankdaten hinzufügen
-            </label>
-
-            {showBankdaten && (
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr",
-                  gap: "18px",
-                  padding: "18px",
-                  backgroundColor: "#f8f7f4",
-                  borderRadius: "14px",
-                  border: "2px solid var(--border)",
-                }}
-              >
-                <Input
-                  label="IBAN"
-                  placeholder="DE89 3704 0044 0532 0130 00"
-                />
-                <Input
-                  label="BIC"
-                  placeholder="COBADEFFXXX"
-                />
-                <Input
-                  label="Kontoinhaber"
-                  placeholder="Name des Kontoinhabers"
-                />
-                <Input
-                  label="Bank"
-                  placeholder="Name der Bank"
-                />
-              </div>
-            )}
-
-            <Button type="submit" loading={formLoading} size="lg">
-              Affiliate erstellen
-            </Button>
-          </form>
-        </Card>
-      )}
+      {/* Edit Form */}
+      {editingEmp &&
+        renderForm(
+          "edit",
+          editFormData,
+          setEditFormData,
+          handleSaveEdit,
+          editLoading,
+          editError,
+          showBankdaten,
+          setShowBankdaten,
+          () => setEditingEmp(null),
+        )
+      }
 
       {/* Search + Filter */}
       <div style={{ display: "flex", gap: "16px", alignItems: "center", flexWrap: "wrap" }}>
@@ -543,71 +609,23 @@ export default function EmpfehlungenPage() {
                   key={emp.id}
                   style={{
                     borderBottom: "1px solid var(--border)",
-                    backgroundColor: i % 2 === 0 ? "white" : "#f8f7f4",
+                    backgroundColor: editingEmp?.id === emp.id
+                      ? "rgba(242,137,0,0.06)"
+                      : i % 2 === 0 ? "white" : "#f8f7f4",
                     transition: "background-color 0.15s ease",
                   }}
                 >
-                  {/* Affiliate (Empfehler) */}
+                  {/* Affiliate */}
                   <td style={{ ...cellStyle, fontWeight: 600 }}>
-                    {editingId === emp.id ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                        <input
-                          value={editFields.empfehler_name}
-                          onChange={(e) => setEditFields({ ...editFields, empfehler_name: e.target.value })}
-                          style={{
-                            padding: "6px 10px",
-                            border: "2px solid var(--orange)",
-                            borderRadius: "8px",
-                            fontSize: "13px",
-                            fontWeight: 600,
-                            width: "140px",
-                          }}
-                        />
-                        <input
-                          value={editFields.empfehler_email}
-                          onChange={(e) => setEditFields({ ...editFields, empfehler_email: e.target.value })}
-                          style={{
-                            padding: "6px 10px",
-                            border: "2px solid var(--border)",
-                            borderRadius: "8px",
-                            fontSize: "12px",
-                            width: "140px",
-                          }}
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        {emp.empfehler_name}
-                        <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 400 }}>
-                          {emp.empfehler_email}
-                        </div>
-                      </>
-                    )}
+                    {emp.empfehler_name}
+                    <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 400 }}>
+                      {emp.empfehler_email}
+                    </div>
                   </td>
 
                   {/* Partner */}
                   <td style={cellStyle}>
-                    {editingId === emp.id ? (
-                      <select
-                        value={editFields.handwerker_id}
-                        onChange={(e) => setEditFields({ ...editFields, handwerker_id: e.target.value })}
-                        style={{
-                          padding: "6px 10px",
-                          border: "2px solid var(--orange)",
-                          borderRadius: "8px",
-                          fontSize: "13px",
-                          width: "120px",
-                        }}
-                      >
-                        {handwerker.map((hw) => (
-                          <option key={hw.id} value={hw.id}>
-                            {hw.name}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      emp.handwerker?.name ?? "–"
-                    )}
+                    {emp.handwerker?.name ?? "–"}
                   </td>
 
                   {/* Provision % */}
@@ -761,74 +779,33 @@ export default function EmpfehlungenPage() {
                   {/* Aktionen */}
                   <td style={cellStyle}>
                     <div style={{ display: "flex", gap: "6px" }}>
-                      {editingId === emp.id ? (
-                        <>
-                          <button
-                            onClick={() => saveEditing(emp.id)}
-                            style={{
-                              background: "#16a34a",
-                              border: "none",
-                              borderRadius: "10px",
-                              padding: "8px 14px",
-                              cursor: "pointer",
-                              color: "white",
-                              fontWeight: 700,
-                              fontSize: "12px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            <Check size={14} /> Speichern
-                          </button>
-                          <button
-                            onClick={() => setEditingId(null)}
-                            style={{
-                              background: "var(--border)",
-                              border: "none",
-                              borderRadius: "10px",
-                              padding: "8px 14px",
-                              cursor: "pointer",
-                              color: "var(--text-muted)",
-                              fontWeight: 700,
-                              fontSize: "12px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            <X size={14} /> Abbrechen
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => startEditing(emp)}
-                            style={{
-                              background: "linear-gradient(135deg, #050234, #0a0654)",
-                              border: "none",
-                              borderRadius: "10px",
-                              padding: "8px 14px",
-                              cursor: "pointer",
-                              color: "white",
-                              fontWeight: 700,
-                              fontSize: "12px",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            <Pencil size={14} /> Bearbeiten
-                          </button>
-                          <Button
-                            size="sm"
-                            variant="danger"
-                            onClick={() => handleDelete(emp)}
-                          >
-                            Löschen
-                          </Button>
-                        </>
-                      )}
+                      <button
+                        onClick={() => startEditing(emp)}
+                        style={{
+                          background: editingEmp?.id === emp.id
+                            ? "var(--orange)"
+                            : "linear-gradient(135deg, #050234, #0a0654)",
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          color: "white",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <Pencil size={14} /> Bearbeiten
+                      </button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => handleDelete(emp)}
+                      >
+                        Löschen
+                      </Button>
                     </div>
                   </td>
                 </tr>
