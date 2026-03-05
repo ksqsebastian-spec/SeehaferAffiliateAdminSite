@@ -1,24 +1,11 @@
-import { redirect } from "next/navigation";
-import { createServerSupabase } from "@/lib/supabase/server";
 import { DesktopSidebar } from "@/components/layout/DesktopSidebar";
 
-export default async function AdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = await createServerSupabase();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) redirect("/");
-
-  // SECURITY: Admin check uses app_metadata (not user_metadata)
-  if (user.app_metadata?.is_admin !== true) {
-    redirect("/dashboard");
-  }
-
+  // Auth disabled for development
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <DesktopSidebar />
