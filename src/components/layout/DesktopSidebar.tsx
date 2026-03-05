@@ -5,7 +5,7 @@ import { LayoutDashboard, Users, Mail, FileText } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/handwerker", label: "Partner", icon: Users },
+  { href: "/admin/handwerker", label: "Kunde", icon: Users },
   { href: "/admin/empfehlungen", label: "Affiliate", icon: FileText },
   { href: "/admin/emails", label: "E-Mails", icon: Mail },
 ];

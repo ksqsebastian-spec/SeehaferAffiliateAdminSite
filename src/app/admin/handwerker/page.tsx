@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 
-export default function PartnerPage() {
+export default function KundePage() {
   const [handwerker, setHandwerker] = useState<Handwerker[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -99,7 +99,7 @@ export default function PartnerPage() {
   }
 
   async function handleDelete(hw: Handwerker) {
-    if (!confirm(`Partner "${hw.name}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`)) {
+    if (!confirm(`Kunde "${hw.name}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`)) {
       return;
     }
 
@@ -122,10 +122,10 @@ export default function PartnerPage() {
     <div className="animate-fadeIn" style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: "32px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
-          Partner verwalten
+          Kunde verwalten
         </h1>
         <Button onClick={() => setShowForm(!showForm)} size="lg">
-          {showForm ? "Abbrechen" : "+ Neuer Partner"}
+          {showForm ? "Abbrechen" : "+ Neuer Kunde"}
         </Button>
       </div>
 
@@ -136,7 +136,7 @@ export default function PartnerPage() {
             style={{ display: "flex", flexDirection: "column", gap: "18px" }}
           >
             <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--navy)" }}>
-              Neuen Partner anlegen
+              Neuen Kunde anlegen
             </h2>
             {formError && (
               <div
@@ -179,7 +179,7 @@ export default function PartnerPage() {
               required
             />
             <Button type="submit" loading={formLoading} size="lg">
-              Partner anlegen
+              Kunde anlegen
             </Button>
           </form>
         </Card>
@@ -223,7 +223,7 @@ export default function PartnerPage() {
             ) : handwerker.length === 0 ? (
               <tr>
                 <td colSpan={6} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>
-                  Noch keine Partner angelegt
+                  Noch keine Kunde angelegt
                 </td>
               </tr>
             ) : (
