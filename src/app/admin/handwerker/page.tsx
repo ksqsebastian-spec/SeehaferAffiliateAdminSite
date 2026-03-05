@@ -85,24 +85,21 @@ export default function PartnerPage() {
   return (
     <div className="animate-fadeIn" style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ fontSize: "28px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
+        <h1 style={{ fontSize: "32px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
           Partner verwalten
         </h1>
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          style={{ borderRadius: "20px", padding: "10px 24px" }}
-        >
+        <Button onClick={() => setShowForm(!showForm)} size="lg">
           {showForm ? "Abbrechen" : "+ Neuer Partner"}
         </Button>
       </div>
 
       {showForm && (
-        <Card style={{ borderLeft: "4px solid var(--orange)", borderRadius: "var(--radius)" }}>
+        <Card style={{ borderLeft: "5px solid var(--orange)", borderRadius: "20px", boxShadow: "0 4px 20px rgba(242,137,0,0.1)" }}>
           <form
             onSubmit={handleCreate}
-            style={{ display: "flex", flexDirection: "column", gap: "16px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "18px" }}
           >
-            <h2 style={{ fontSize: "18px", fontWeight: 700, margin: 0, color: "var(--navy)" }}>
+            <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--navy)" }}>
               Neuen Partner anlegen
             </h2>
             {formError && (
@@ -110,10 +107,11 @@ export default function PartnerPage() {
                 role="alert"
                 style={{
                   color: "var(--red)",
-                  fontSize: "13px",
+                  fontSize: "14px",
+                  fontWeight: 600,
                   backgroundColor: "var(--red-bg)",
-                  padding: "10px 14px",
-                  borderRadius: "8px",
+                  padding: "12px 16px",
+                  borderRadius: "12px",
                 }}
               >
                 {formError}
@@ -144,35 +142,34 @@ export default function PartnerPage() {
               }
               required
             />
-            <Button type="submit" loading={formLoading} style={{ borderRadius: "20px" }}>
+            <Button type="submit" loading={formLoading} size="lg">
               Partner anlegen
             </Button>
           </form>
         </Card>
       )}
 
-      <Card style={{ padding: 0, overflow: "auto", borderRadius: "var(--radius)" }}>
+      <Card style={{ padding: 0, overflow: "auto", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
         <table
           style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}
         >
           <thead>
             <tr
               style={{
-                borderBottom: "2px solid var(--border)",
                 textAlign: "left",
-                backgroundColor: "#fafaf8",
+                background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
               {["Name", "E-Mail", "Provision %", "Status", "Erstellt"].map((h) => (
                 <th
                   key={h}
                   style={{
-                    padding: "14px 18px",
+                    padding: "16px 18px",
                     fontWeight: 700,
-                    color: "var(--text-muted)",
+                    color: "rgba(255,255,255,0.8)",
                     fontSize: "12px",
                     textTransform: "uppercase",
-                    letterSpacing: "0.5px",
+                    letterSpacing: "0.8px",
                   }}
                 >
                   {h}
@@ -199,12 +196,12 @@ export default function PartnerPage() {
                   key={hw.id}
                   style={{
                     borderBottom: "1px solid var(--border)",
-                    backgroundColor: i % 2 === 0 ? "white" : "#fafaf8",
+                    backgroundColor: i % 2 === 0 ? "white" : "#f8f7f4",
                   }}
                 >
-                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>{hw.name}</td>
-                  <td style={{ padding: "14px 18px" }}>{hw.email}</td>
-                  <td style={{ padding: "14px 18px" }}>
+                  <td style={{ padding: "16px 18px", fontWeight: 600 }}>{hw.name}</td>
+                  <td style={{ padding: "16px 18px" }}>{hw.email}</td>
+                  <td style={{ padding: "16px 18px" }}>
                     {editingId === hw.id ? (
                       <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                         <input
@@ -216,16 +213,16 @@ export default function PartnerPage() {
                           onChange={(e) => setEditProvision(e.target.value)}
                           style={{
                             width: "70px",
-                            padding: "6px 10px",
+                            padding: "8px 10px",
                             border: "2px solid var(--orange)",
-                            borderRadius: "8px",
+                            borderRadius: "10px",
                             fontSize: "14px",
+                            fontWeight: 700,
                           }}
                         />
                         <Button
                           size="sm"
                           onClick={() => handleUpdateProvision(hw.id)}
-                          style={{ borderRadius: "8px" }}
                         >
                           OK
                         </Button>
@@ -244,14 +241,15 @@ export default function PartnerPage() {
                           setEditProvision(String(hw.provision_prozent));
                         }}
                         style={{
-                          background: "var(--orange-bg)",
+                          background: "linear-gradient(135deg, #f28900, #ff6b00)",
                           border: "none",
                           cursor: "pointer",
                           fontWeight: 700,
-                          color: "var(--orange)",
-                          padding: "4px 12px",
-                          borderRadius: "12px",
+                          color: "white",
+                          padding: "6px 16px",
+                          borderRadius: "16px",
                           fontSize: "14px",
+                          boxShadow: "0 2px 8px rgba(242,137,0,0.3)",
                         }}
                         title="Klicke zum Bearbeiten"
                       >
@@ -259,21 +257,22 @@ export default function PartnerPage() {
                       </button>
                     )}
                   </td>
-                  <td style={{ padding: "14px 18px" }}>
+                  <td style={{ padding: "16px 18px" }}>
                     <span
                       style={{
                         fontSize: "12px",
                         fontWeight: 700,
-                        color: hw.active ? "var(--green)" : "var(--red)",
-                        backgroundColor: hw.active ? "var(--green-bg)" : "var(--red-bg)",
-                        padding: "4px 10px",
-                        borderRadius: "12px",
+                        color: "white",
+                        backgroundColor: hw.active ? "#16a34a" : "#dc2626",
+                        padding: "6px 14px",
+                        borderRadius: "16px",
+                        boxShadow: hw.active ? "0 2px 8px rgba(22,163,74,0.3)" : "0 2px 8px rgba(220,38,38,0.3)",
                       }}
                     >
                       {hw.active ? "AKTIV" : "INAKTIV"}
                     </span>
                   </td>
-                  <td style={{ padding: "14px 18px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
+                  <td style={{ padding: "16px 18px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
                     {new Date(hw.created_at).toLocaleDateString("de-DE")}
                   </td>
                 </tr>

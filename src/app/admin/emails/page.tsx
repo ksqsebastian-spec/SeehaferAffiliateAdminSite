@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Copy, ExternalLink, Check } from "lucide-react";
+import { Copy, ExternalLink, Check, Mail } from "lucide-react";
 import type { EmpfehlungWithHandwerker } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -78,25 +78,26 @@ export default function EmailConfiguratorPage() {
       style={{ display: "flex", flexDirection: "column", gap: "32px" }}
     >
       <div>
-        <h1 style={{ fontSize: "28px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
+        <h1 style={{ fontSize: "32px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
           E-Mail Konfigurator
         </h1>
-        <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "8px 0 0 0" }}>
-          Wähle eine Empfehlung aus, um die Auszahlungs-E-Mail zu generieren. Kopiere den Text in Outlook oder öffne ihn direkt im Mail-Client.
+        <p style={{ color: "var(--text-muted)", fontSize: "15px", margin: "10px 0 0 0", lineHeight: 1.6 }}>
+          Wähle eine Empfehlung aus, um die Auszahlungs-E-Mail zu generieren.
+          Kopiere den Text in Outlook oder öffne ihn direkt im Mail-Client.
         </p>
       </div>
 
       {/* Empfehlung selector */}
-      <div style={{ maxWidth: "500px" }}>
+      <Card style={{ borderRadius: "20px", padding: "24px", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
         <label
           style={{
             fontSize: "12px",
             fontWeight: 700,
-            color: "var(--text-muted)",
+            color: "var(--orange)",
             display: "block",
-            marginBottom: "6px",
+            marginBottom: "10px",
             textTransform: "uppercase",
-            letterSpacing: "0.5px",
+            letterSpacing: "1px",
           }}
         >
           Empfehlung auswählen
@@ -106,12 +107,13 @@ export default function EmailConfiguratorPage() {
           onChange={(e) => setSelectedId(e.target.value)}
           style={{
             width: "100%",
-            padding: "12px 16px",
-            fontSize: "14px",
+            padding: "14px 18px",
+            fontSize: "15px",
             border: "2px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
+            borderRadius: "14px",
             backgroundColor: "white",
             fontWeight: 500,
+            color: "var(--text)",
           }}
         >
           <option value="">-- Empfehlung wählen --</option>
@@ -126,27 +128,29 @@ export default function EmailConfiguratorPage() {
             ))
           )}
         </select>
-      </div>
+      </Card>
 
       {/* Selected empfehlung info */}
       {selected && (
         <Card
           style={{
-            backgroundColor: "var(--blue-bg)",
-            borderLeft: "4px solid var(--blue)",
-            padding: "18px 20px",
+            background: "linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)",
+            borderLeft: "5px solid var(--blue)",
+            padding: "20px 24px",
+            borderRadius: "20px",
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-            <div style={{ fontWeight: 600 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
+            <div style={{ fontWeight: 700, fontSize: "16px", color: "var(--navy)" }}>
               An: {selected.empfehler_name} ({selected.empfehler_email})
             </div>
             <Badge status={selected.status} />
           </div>
-          <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>
-            Kunde: {selected.kunde_name} | Ref: {selected.ref_code}
+          <div style={{ fontSize: "14px", color: "var(--text-muted)", marginTop: "8px" }}>
+            Kunde: {selected.kunde_name} | Ref:{" "}
+            <span style={{ fontFamily: "monospace", color: "var(--blue)", fontWeight: 700 }}>{selected.ref_code}</span>
             {selected.provision_betrag && (
-              <> | Provision: <strong>{formatCurrency(selected.provision_betrag)}</strong></>
+              <> | Provision: <strong style={{ color: "var(--green)" }}>{formatCurrency(selected.provision_betrag)}</strong></>
             )}
           </div>
         </Card>
@@ -154,23 +158,24 @@ export default function EmailConfiguratorPage() {
 
       {/* Generated email */}
       {generatedEmail && selected && (
-        <Card style={{ padding: 0, borderRadius: "var(--radius)" }}>
+        <Card style={{ padding: 0, borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
           {/* Subject */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "18px 22px",
+              padding: "20px 24px",
               borderBottom: "1px solid var(--border)",
-              backgroundColor: "#fafaf8",
+              background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
+              borderRadius: "20px 20px 0 0",
             }}
           >
             <div>
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: "11px", color: "rgba(255,255,255,0.5)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>
                 Betreff
               </span>
-              <div style={{ fontSize: "15px", fontWeight: 600, marginTop: "4px" }}>
+              <div style={{ fontSize: "16px", fontWeight: 600, marginTop: "4px", color: "white" }}>
                 {generatedEmail.subject}
               </div>
             </div>
@@ -179,22 +184,23 @@ export default function EmailConfiguratorPage() {
               size="sm"
               onClick={() => copyToClipboard(generatedEmail.subject, "subject")}
               aria-label="Betreff kopieren"
+              style={{ color: "rgba(255,255,255,0.7)" }}
             >
-              {copied === "subject" ? <Check size={14} /> : <Copy size={14} />}
+              {copied === "subject" ? <Check size={16} /> : <Copy size={16} />}
             </Button>
           </div>
 
           {/* Body */}
-          <div style={{ padding: "22px" }}>
+          <div style={{ padding: "24px" }}>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "10px",
+                marginBottom: "12px",
               }}
             >
-              <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <span style={{ fontSize: "12px", color: "var(--orange)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "1px" }}>
                 Nachricht
               </span>
               <Button
@@ -218,12 +224,12 @@ export default function EmailConfiguratorPage() {
               style={{
                 whiteSpace: "pre-wrap",
                 fontFamily: "Inter, sans-serif",
-                fontSize: "14px",
-                lineHeight: 1.7,
+                fontSize: "15px",
+                lineHeight: 1.8,
                 color: "var(--text)",
-                backgroundColor: "var(--bg)",
-                padding: "20px",
-                borderRadius: "var(--radius-sm)",
+                backgroundColor: "#f8f7f4",
+                padding: "24px",
+                borderRadius: "14px",
                 border: "1px solid var(--border)",
                 margin: 0,
               }}
@@ -236,28 +242,28 @@ export default function EmailConfiguratorPage() {
           <div
             style={{
               display: "flex",
-              gap: "10px",
-              padding: "18px 22px",
+              gap: "12px",
+              padding: "20px 24px",
               borderTop: "1px solid var(--border)",
               flexWrap: "wrap",
             }}
           >
             <Button
+              size="lg"
               onClick={() =>
                 copyToClipboard(
                   `Betreff: ${generatedEmail.subject}\n\n${generatedEmail.body}`,
                   "all"
                 )
               }
-              style={{ borderRadius: "20px" }}
             >
               {copied === "all" ? (
                 <>
-                  <Check size={16} /> Alles kopiert!
+                  <Check size={18} /> Alles kopiert!
                 </>
               ) : (
                 <>
-                  <Copy size={16} /> Alles kopieren
+                  <Copy size={18} /> Alles kopieren
                 </>
               )}
             </Button>
@@ -265,8 +271,8 @@ export default function EmailConfiguratorPage() {
               href={mailtoLink}
               style={{ textDecoration: "none" }}
             >
-              <Button variant="secondary" style={{ borderRadius: "20px" }}>
-                <ExternalLink size={16} /> In Mail-App öffnen
+              <Button variant="secondary" size="lg">
+                <Mail size={18} /> In Mail-App öffnen
               </Button>
             </a>
           </div>
@@ -277,12 +283,15 @@ export default function EmailConfiguratorPage() {
         <Card
           style={{
             textAlign: "center",
-            padding: "48px",
+            padding: "60px",
             color: "var(--text-muted)",
-            fontSize: "15px",
+            fontSize: "16px",
+            borderRadius: "20px",
+            background: "linear-gradient(135deg, #f8f7f4 0%, #eff6ff 100%)",
           }}
         >
-          Wähle oben eine Empfehlung aus, um die E-Mail zu generieren.
+          <Mail size={40} color="var(--orange)" style={{ marginBottom: "16px" }} />
+          <div>Wähle oben eine Empfehlung aus, um die E-Mail zu generieren.</div>
         </Card>
       )}
     </div>
