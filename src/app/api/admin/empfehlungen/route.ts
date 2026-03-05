@@ -114,16 +114,14 @@ export async function PATCH(request: NextRequest) {
     updateData.ausgezahlt_am = null;
   }
 
-  const { data, error } = await adminClient
+  const { error } = await adminClient
     .from("empfehlungen")
     .update(updateData)
-    .eq("id", id)
-    .select()
-    .single();
+    .eq("id", id);
 
-  if (error || !data) {
+  if (error) {
     return NextResponse.json(
-      { error: "Status konnte nicht aktualisiert werden", detail: error?.message },
+      { error: "Status konnte nicht aktualisiert werden", detail: error.message },
       { status: 500 }
     );
   }
@@ -137,7 +135,7 @@ export async function PATCH(request: NextRequest) {
     ipAddress: request.headers.get("x-forwarded-for"),
   });
 
-  return NextResponse.json(data);
+  return NextResponse.json({ success: true });
 }
 
 // DELETE /api/admin/empfehlungen — delete empfehlung

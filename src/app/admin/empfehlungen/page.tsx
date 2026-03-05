@@ -402,7 +402,7 @@ export default function EmpfehlungenPage() {
                 background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
-              {["Kunde", "Affiliate", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
+              {["Kunde", "Affiliate", "Partner", "Provision %", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
                 (h) => (
                   <th
                     key={h}
@@ -426,7 +426,7 @@ export default function EmpfehlungenPage() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}
                 >
                   Laden...
@@ -435,7 +435,7 @@ export default function EmpfehlungenPage() {
             ) : empfehlungen.length === 0 ? (
               <tr>
                 <td
-                  colSpan={9}
+                  colSpan={10}
                   style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}
                 >
                   Keine Empfehlungen gefunden
@@ -467,6 +467,20 @@ export default function EmpfehlungenPage() {
                   </td>
                   <td style={{ padding: "16px 18px" }}>
                     {emp.handwerker?.name ?? "–"}
+                  </td>
+                  <td style={{ padding: "16px 18px" }}>
+                    <span
+                      style={{
+                        background: "linear-gradient(135deg, #f28900, #ff6b00)",
+                        color: "white",
+                        padding: "4px 12px",
+                        borderRadius: "12px",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {emp.handwerker?.provision_prozent ?? "–"}%
+                    </span>
                   </td>
                   <td
                     style={{
