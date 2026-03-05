@@ -112,7 +112,7 @@ export default function EmpfehlungenPage() {
 
     const selectedPartner = handwerker.find((h) => h.id === formData.handwerker_id);
     if (!selectedPartner) {
-      setFormError("Bitte Partner auswählen");
+      setFormError("Bitte Kunde auswählen");
       setFormLoading(false);
       return;
     }
@@ -327,7 +327,7 @@ export default function EmpfehlungenPage() {
                   letterSpacing: "0.5px",
                 }}
               >
-                Partner
+                Kunde
               </label>
               <select
                 value={data.handwerker_id}
@@ -345,7 +345,7 @@ export default function EmpfehlungenPage() {
                   cursor: "pointer",
                 }}
               >
-                <option value="">Partner auswählen...</option>
+                <option value="">Kunde auswählen...</option>
                 {handwerker.map((hw) => (
                   <option key={hw.id} value={hw.id}>
                     {hw.name} ({hw.provision_prozent}%)
@@ -564,7 +564,7 @@ export default function EmpfehlungenPage() {
                 background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
-              {["Affiliate", "Partner", "Provision %", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
+              {["Affiliate", "Kunde", "Provision %", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
                 (h) => (
                   <th
                     key={h}
@@ -623,7 +623,7 @@ export default function EmpfehlungenPage() {
                     </div>
                   </td>
 
-                  {/* Partner */}
+                  {/* Kunde */}
                   <td style={cellStyle}>
                     {emp.handwerker?.name ?? "–"}
                   </td>
