@@ -67,22 +67,44 @@ export async function requireAdmin(): Promise<
   return { user: result.user, isAdmin: true };
 }
 
+// Collect all allowed origins for CSRF validation
+function getAllowedOrigins(): string[] {
+  const origins: string[] = [];
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    origins.push(new URL(appUrl).origin);
+  }
+
+  // Vercel sets VERCEL_URL automatically for every deployment (including previews)
+  const vercelUrl = process.env.VERCEL_URL;
+  if (vercelUrl) {
+    origins.push(new URL(`https://${vercelUrl}`).origin);
+  }
+
+  if (origins.length === 0) {
+    origins.push("http://localhost:3000");
+  }
+
+  return origins;
+}
+
 // Validate request origin to protect against CSRF
 export function validateOrigin(request: Request): boolean {
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const allowed = getAllowedOrigins();
 
   // For same-origin requests with no origin header (e.g., same-page navigation)
   if (!origin && !referer) return true;
 
   if (origin) {
-    return origin === new URL(appUrl).origin;
+    return allowed.includes(origin);
   }
 
   if (referer) {
     try {
-      return new URL(referer).origin === new URL(appUrl).origin;
+      return allowed.includes(new URL(referer).origin);
     } catch {
       return false;
     }
