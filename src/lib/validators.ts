@@ -22,12 +22,14 @@ export const empfehlungCompleteSchema = z.object({
 export const handwerkerCreateSchema = z.object({
   name: z.string().min(1).max(120),
   email: z.email().max(200),
+  telefon: z.string().max(50).optional(),
   provision_prozent: z.number().min(0).max(50),
 });
 
 export const handwerkerUpdateSchema = z.object({
   name: z.string().min(1).max(120).optional(),
   email: z.email().max(200).optional(),
+  telefon: z.string().max(50).optional().nullable(),
   provision_prozent: z.number().min(0).max(50).optional(),
   active: z.boolean().optional(),
 });

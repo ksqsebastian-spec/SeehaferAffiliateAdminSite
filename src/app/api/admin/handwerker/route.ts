@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     let query = adminClient
       .from("empfehlungen")
-      .select("*, handwerker:handwerker_id(id, name, email, provision_prozent)", {
+      .select("*, handwerker:handwerker_id(id, name, email, telefon, provision_prozent)", {
         count: "exact",
       })
       .order("created_at", { ascending: false })
@@ -128,6 +128,7 @@ export async function POST(request: NextRequest) {
       auth_user_id: authUser.user.id,
       name: parsed.data.name,
       email: parsed.data.email,
+      telefon: parsed.data.telefon || null,
       provision_prozent: parsed.data.provision_prozent,
     })
     .select()

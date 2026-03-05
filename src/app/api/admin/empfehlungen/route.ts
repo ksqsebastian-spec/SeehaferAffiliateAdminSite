@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
       ...parsed.data,
       ref_code: refCode,
     })
-    .select("*, handwerker:handwerker_id(id, name, email, provision_prozent)")
+    .select("*, handwerker:handwerker_id(id, name, email, telefon, provision_prozent)")
     .single();
 
   if (error) {
@@ -87,6 +87,11 @@ export async function PATCH(request: NextRequest) {
     kunde_name,
     kunde_kontakt,
     handwerker_id,
+    iban,
+    bic,
+    kontoinhaber,
+    bank_name,
+    provision_betrag: directProvisionBetrag,
   } = body as Record<string, unknown>;
 
   if (!id || typeof id !== "string") {
@@ -101,7 +106,7 @@ export async function PATCH(request: NextRequest) {
   // Get current empfehlung for audit + provision calc (non-blocking)
   const { data: before } = await adminClient
     .from("empfehlungen")
-    .select("status, handwerker:handwerker_id(provision_prozent)")
+    .select("status, rechnungsbetrag, handwerker:handwerker_id(provision_prozent)")
     .eq("id", id)
     .single();
 
@@ -141,12 +146,26 @@ export async function PATCH(request: NextRequest) {
     updateData.provision_betrag = berechneProvision(betrag, provisionProzent);
   }
 
+  // Direct provision_betrag update (for Auszahlung page adjustments)
+  if (directProvisionBetrag !== undefined && rechnungsbetrag === undefined) {
+    const betrag = Number(directProvisionBetrag);
+    if (!isNaN(betrag) && betrag >= 0) {
+      updateData.provision_betrag = betrag;
+    }
+  }
+
   // Text field updates
   if (empfehler_name !== undefined) updateData.empfehler_name = empfehler_name;
   if (empfehler_email !== undefined) updateData.empfehler_email = empfehler_email;
   if (kunde_name !== undefined) updateData.kunde_name = kunde_name;
   if (kunde_kontakt !== undefined) updateData.kunde_kontakt = kunde_kontakt;
   if (handwerker_id !== undefined) updateData.handwerker_id = handwerker_id;
+
+  // Bankdaten fields
+  if (iban !== undefined) updateData.iban = iban;
+  if (bic !== undefined) updateData.bic = bic;
+  if (kontoinhaber !== undefined) updateData.kontoinhaber = kontoinhaber;
+  if (bank_name !== undefined) updateData.bank_name = bank_name;
 
   if (Object.keys(updateData).length === 0) {
     return NextResponse.json(

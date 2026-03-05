@@ -13,7 +13,7 @@ import {
 } from "@/lib/email-templates";
 
 export default function EmailConfiguratorPage() {
-  const [empfehlungen, setEmpfehlungen] = useState<EmpfehlungWithHandwerker[]>([]);
+  const [empfehlungen, setAffiliateen] = useState<EmpfehlungWithHandwerker[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string>("");
   const [copied, setCopied] = useState<"subject" | "body" | "all" | null>(null);
@@ -23,13 +23,13 @@ export default function EmailConfiguratorPage() {
       const res = await fetch("/api/admin/handwerker?view=empfehlungen&pageSize=100");
       if (!res.ok) throw new Error();
       const data = await res.json();
-      setEmpfehlungen(
+      setAffiliateen(
         (data.data || []).filter(
           (e: EmpfehlungWithHandwerker) => e.status === "erledigt" || e.status === "ausgezahlt"
         )
       );
     } catch {
-      setEmpfehlungen([]);
+      setAffiliateen([]);
     } finally {
       setLoading(false);
     }
@@ -82,14 +82,14 @@ export default function EmailConfiguratorPage() {
           E-Mail Konfigurator
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: "15px", margin: "10px 0 0 0", lineHeight: 1.6 }}>
-          Wähle eine Empfehlung, um die Auszahlungs-E-Mail zu generieren.
+          Wähle eine Affiliate, um die Auszahlungs-E-Mail zu generieren.
         </p>
       </div>
 
-      {/* Empfehlung cards */}
+      {/* Affiliate cards */}
       <div>
         <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--orange)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "14px" }}>
-          Empfehlung auswählen
+          Affiliate auswählen
         </div>
 
         {loading ? (
@@ -98,7 +98,7 @@ export default function EmailConfiguratorPage() {
           </Card>
         ) : empfehlungen.length === 0 ? (
           <Card style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)", borderRadius: "20px" }}>
-            Keine Empfehlungen mit Status &quot;erledigt&quot; oder &quot;ausgezahlt&quot; vorhanden.
+            Keine Affiliateen mit Status &quot;erledigt&quot; oder &quot;ausgezahlt&quot; vorhanden.
           </Card>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
@@ -301,7 +301,7 @@ export default function EmailConfiguratorPage() {
           }}
         >
           <Mail size={40} color="var(--orange)" style={{ marginBottom: "16px" }} />
-          <div>Wähle oben eine Empfehlung aus, um die E-Mail zu generieren.</div>
+          <div>Wähle oben eine Affiliate aus, um die E-Mail zu generieren.</div>
         </Card>
       )}
     </div>

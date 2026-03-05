@@ -1,12 +1,14 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, Mail, FileText } from "lucide-react";
+import { LayoutDashboard, Users, Mail, FileText, CreditCard, Archive } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/handwerker", label: "Kunde", icon: Users },
   { href: "/admin/empfehlungen", label: "Affiliate", icon: FileText },
+  { href: "/admin/auszahlung", label: "Auszahlung", icon: CreditCard },
+  { href: "/admin/archiv", label: "Archiv", icon: Archive },
   { href: "/admin/emails", label: "E-Mails", icon: Mail },
 ];
 
