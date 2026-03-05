@@ -5,16 +5,16 @@ export default function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Auth disabled for development
   return (
     <div style={{ display: "flex", minHeight: "100vh" }}>
       <DesktopSidebar />
       <main
         style={{
-          marginLeft: "240px",
+          marginLeft: "260px",
           flex: 1,
-          padding: "32px",
+          padding: "40px 48px",
           backgroundColor: "var(--bg)",
+          maxWidth: "1200px",
         }}
       >
         {children}

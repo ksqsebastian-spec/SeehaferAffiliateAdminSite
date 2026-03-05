@@ -109,7 +109,7 @@ export function QuickAddForm() {
       />
 
       <Input
-        label="Email / PayPal"
+        label="E-Mail"
         name="empfehler_email"
         type="email"
         required

@@ -1,33 +1,23 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { LayoutDashboard, Users, CreditCard, Mail, LogOut } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { LayoutDashboard, Users, Mail } from "lucide-react";
 
 const navItems = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/handwerker", label: "Handwerker", icon: Users },
-  { href: "/admin/payouts", label: "Auszahlungen", icon: CreditCard },
+  { href: "/admin/handwerker", label: "Partner", icon: Users },
   { href: "/admin/emails", label: "E-Mails", icon: Mail },
 ];
 
 export function DesktopSidebar() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/");
-    router.refresh();
-  }
 
   return (
     <aside
       style={{
-        width: "240px",
+        width: "260px",
         height: "100vh",
-        backgroundColor: "var(--navy)",
+        background: "linear-gradient(180deg, #050234 0%, #0a0654 100%)",
         color: "white",
         display: "flex",
         flexDirection: "column",
@@ -38,16 +28,17 @@ export function DesktopSidebar() {
     >
       <div
         style={{
-          padding: "24px 20px",
+          padding: "32px 24px",
           fontWeight: 800,
-          fontSize: "16px",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          fontSize: "18px",
+          borderBottom: "1px solid rgba(255,255,255,0.08)",
+          letterSpacing: "-0.3px",
         }}
       >
         Seehafer Admin
       </div>
 
-      <nav style={{ flex: 1, padding: "12px 8px" }}>
+      <nav style={{ flex: 1, padding: "24px 12px" }}>
         {navItems.map((item) => {
           const isActive = pathname === item.href;
           const Icon = item.icon;
@@ -58,50 +49,25 @@ export function DesktopSidebar() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "10px",
-                padding: "10px 12px",
-                borderRadius: "8px",
-                fontSize: "14px",
+                gap: "12px",
+                padding: "14px 16px",
+                borderRadius: "12px",
+                fontSize: "15px",
                 fontWeight: isActive ? 600 : 400,
                 color: "white",
                 textDecoration: "none",
-                backgroundColor: isActive
-                  ? "rgba(255,255,255,0.12)"
-                  : "transparent",
-                marginBottom: "2px",
-                transition: "background-color 0.2s ease",
+                backgroundColor: isActive ? "rgba(242,137,0,0.15)" : "transparent",
+                marginBottom: "6px",
+                transition: "all 0.2s ease",
+                borderLeft: isActive ? "3px solid var(--orange)" : "3px solid transparent",
               }}
             >
-              <Icon size={18} opacity={isActive ? 1 : 0.6} />
-              <span style={{ opacity: isActive ? 1 : 0.7 }}>
-                {item.label}
-              </span>
+              <Icon size={20} style={{ color: isActive ? "var(--orange)" : "rgba(255,255,255,0.5)" }} />
+              <span style={{ opacity: isActive ? 1 : 0.6 }}>{item.label}</span>
             </a>
           );
         })}
       </nav>
-
-      <button
-        onClick={handleLogout}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "10px",
-          padding: "16px 20px",
-          border: "none",
-          borderTop: "1px solid rgba(255,255,255,0.1)",
-          backgroundColor: "transparent",
-          color: "white",
-          cursor: "pointer",
-          fontSize: "14px",
-          opacity: 0.7,
-          width: "100%",
-          textAlign: "left",
-        }}
-      >
-        <LogOut size={18} />
-        Abmelden
-      </button>
     </aside>
   );
 }
