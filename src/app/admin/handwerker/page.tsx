@@ -21,7 +21,7 @@ export default function KundePage() {
     try {
       const [hwRes, empRes] = await Promise.all([
         fetch("/api/admin/handwerker"),
-        fetch("/api/admin/handwerker?view=empfehlungen&pageSize=100&status=ausgezahlt"),
+        fetch("/api/admin/handwerker?view=empfehlungen&pageSize=100"),
       ]);
       if (hwRes.ok) {
         const data = await hwRes.json();
@@ -44,8 +44,16 @@ export default function KundePage() {
 
   // Get set of handwerker IDs that have ausgezahlt empfehlungen (archived)
   const archivedHandwerkerIds = new Set(
-    empfehlungen.map((e) => e.handwerker_id)
+    empfehlungen.filter((e) => e.status === "ausgezahlt").map((e) => e.handwerker_id)
   );
+
+  // Map handwerker_id → linked affiliate names + status
+  const affiliatesByHandwerker = new Map<string, { name: string; email: string; status: string }[]>();
+  for (const emp of empfehlungen) {
+    const list = affiliatesByHandwerker.get(emp.handwerker_id) || [];
+    list.push({ name: emp.empfehler_name, email: emp.empfehler_email, status: emp.status });
+    affiliatesByHandwerker.set(emp.handwerker_id, list);
+  }
 
   function getStatusDisplay(hw: Handwerker) {
     if (!hw.active && archivedHandwerkerIds.has(hw.id)) {
@@ -170,7 +178,7 @@ export default function KundePage() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
           <thead>
             <tr style={{ textAlign: "left", background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)" }}>
-              {["Name", "E-Mail", "Telefon", "Provision %", "Status", "Erstellt", "Aktionen"].map((h) => (
+              {["Name", "E-Mail", "Telefon", "Affiliate", "Provision %", "Status", "Erstellt", "Aktionen"].map((h) => (
                 <th key={h} style={{ padding: "16px 18px", fontWeight: 700, color: "rgba(255,255,255,0.8)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.8px" }}>
                   {h}
                 </th>
@@ -179,9 +187,9 @@ export default function KundePage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Laden...</td></tr>
+              <tr><td colSpan={8} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Laden...</td></tr>
             ) : handwerker.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Noch keine Kunde angelegt</td></tr>
+              <tr><td colSpan={8} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Noch keine Kunde angelegt</td></tr>
             ) : (
               handwerker.map((hw, i) => {
                 const status = getStatusDisplay(hw);
@@ -191,6 +199,25 @@ export default function KundePage() {
                     <td style={{ padding: "16px 18px" }}>{hw.email}</td>
                     <td style={{ padding: "16px 18px", color: hw.telefon ? "var(--text)" : "var(--text-muted)" }}>
                       {hw.telefon || "–"}
+                    </td>
+                    <td style={{ padding: "16px 18px" }}>
+                      {(() => {
+                        const affiliates = affiliatesByHandwerker.get(hw.id);
+                        if (!affiliates || affiliates.length === 0) {
+                          return <span style={{ color: "var(--text-muted)" }}>–</span>;
+                        }
+                        return affiliates.map((a, idx) => (
+                          <div key={idx} style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: idx < affiliates.length - 1 ? "4px" : 0 }}>
+                            <span style={{ fontWeight: 600, fontSize: "13px" }}>{a.name}</span>
+                            <span style={{
+                              fontSize: "10px", fontWeight: 700, padding: "2px 6px", borderRadius: "8px", color: "white",
+                              backgroundColor: a.status === "offen" ? "#ea580c" : a.status === "erledigt" ? "#16a34a" : "#2563eb",
+                            }}>
+                              {a.status === "offen" ? "OFFEN" : a.status === "erledigt" ? "ERLEDIGT" : "AUSGEZAHLT"}
+                            </span>
+                          </div>
+                        ));
+                      })()}
                     </td>
                     <td style={{ padding: "16px 18px" }}>
                       {editingId === hw.id ? (
