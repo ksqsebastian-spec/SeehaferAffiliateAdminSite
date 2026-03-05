@@ -7,8 +7,6 @@ const serverEnvSchema = z.object({
   PAYPAL_CLIENT_ID: z.string().min(1),
   PAYPAL_CLIENT_SECRET: z.string().min(1),
   PAYPAL_MODE: z.enum(["sandbox", "live"]).default("sandbox"),
-  RESEND_API_KEY: z.string().min(1),
-  EMAIL_FROM: z.email(),
   NEXT_PUBLIC_APP_URL: z.url().default("http://localhost:3000"),
 });
 

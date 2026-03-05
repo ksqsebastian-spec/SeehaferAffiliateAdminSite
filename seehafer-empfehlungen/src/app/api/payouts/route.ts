@@ -4,7 +4,6 @@ import { payoutSchema } from "@/lib/validators";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendPayout } from "@/lib/paypal";
-import { sendAusgezahltEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 
 // POST /api/payouts — trigger PayPal payout for selected empfehlungen
@@ -143,16 +142,6 @@ export async function POST(request: NextRequest) {
     },
     ipAddress: request.headers.get("x-forwarded-for"),
   });
-
-  // Send notification emails (fire-and-forget)
-  for (const emp of empfehlungen) {
-    sendAusgezahltEmail({
-      empfehlerName: emp.empfehler_name,
-      empfehlerEmail: emp.empfehler_email,
-      refCode: emp.ref_code,
-      provisionBetrag: Number(emp.provision_betrag),
-    }).catch((err) => console.error("Payout email failed:", err));
-  }
 
   return NextResponse.json({
     success: true,

@@ -3,7 +3,6 @@ import { requireAuth, validateOrigin } from "@/lib/auth";
 import { empfehlungCompleteSchema } from "@/lib/validators";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { berechneProvision } from "@/lib/utils";
-import { sendErledigtEmail } from "@/lib/email";
 import { logAudit } from "@/lib/audit";
 
 // POST /api/referrals/[id]/complete — mark empfehlung as erledigt
@@ -94,13 +93,6 @@ export async function POST(
     },
     ipAddress: request.headers.get("x-forwarded-for"),
   });
-
-  // Send notification email (fire-and-forget, don't block response)
-  sendErledigtEmail({
-    empfehlerName: empfehlung.empfehler_name,
-    empfehlerEmail: empfehlung.empfehler_email,
-    refCode: empfehlung.ref_code,
-  }).catch((err) => console.error("Email send failed:", err));
 
   return NextResponse.json(updated);
 }
