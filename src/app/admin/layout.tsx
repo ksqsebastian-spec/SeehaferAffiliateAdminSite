@@ -14,7 +14,7 @@ export default function AdminLayout({
           flex: 1,
           padding: "40px 48px",
           backgroundColor: "var(--bg)",
-          maxWidth: "1200px",
+          width: "100%",
         }}
       >
         {children}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search } from "lucide-react";
+import { Search, Check, X, Pencil } from "lucide-react";
 import type { EmpfehlungWithHandwerker, EmpfehlungStatus, Handwerker } from "@/types";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
@@ -33,15 +33,19 @@ export default function EmpfehlungenPage() {
   const [showForm, setShowForm] = useState(false);
   const [formLoading, setFormLoading] = useState(false);
   const [formError, setFormError] = useState("");
+  const [showBankdaten, setShowBankdaten] = useState(false);
   const [formData, setFormData] = useState({
-    kunde_name: "",
+    handwerker_id: "",
     kunde_kontakt: "",
     empfehler_name: "",
     empfehler_email: "",
-    handwerker_id: "",
   });
 
-  // Inline editing for Rechnungsbetrag
+  // Inline editing
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editFields, setEditFields] = useState<Record<string, string>>({});
+
+  // Inline betrag editing
   const [editingBetragId, setEditingBetragId] = useState<string | null>(null);
   const [editBetrag, setEditBetrag] = useState("");
 
@@ -92,12 +96,19 @@ export default function EmpfehlungenPage() {
     setFormLoading(true);
     setFormError("");
 
+    const selectedPartner = handwerker.find((h) => h.id === formData.handwerker_id);
+    if (!selectedPartner) {
+      setFormError("Bitte Partner auswählen");
+      setFormLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch("/api/admin/empfehlungen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          kunde_name: formData.kunde_name,
+          kunde_name: selectedPartner.name,
           kunde_kontakt: formData.kunde_kontakt || undefined,
           empfehler_name: formData.empfehler_name,
           empfehler_email: formData.empfehler_email,
@@ -113,12 +124,12 @@ export default function EmpfehlungenPage() {
 
       setShowForm(false);
       setFormData({
-        kunde_name: "",
+        handwerker_id: "",
         kunde_kontakt: "",
         empfehler_name: "",
         empfehler_email: "",
-        handwerker_id: "",
       });
+      setShowBankdaten(false);
       fetchData();
     } catch {
       setFormError("Netzwerkfehler");
@@ -128,6 +139,11 @@ export default function EmpfehlungenPage() {
   }
 
   async function handleStatusChange(id: string, newStatus: EmpfehlungStatus) {
+    // Optimistic update
+    setEmpfehlungen((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, status: newStatus } : e))
+    );
+
     try {
       const res = await fetch("/api/admin/empfehlungen", {
         method: "PATCH",
@@ -135,13 +151,11 @@ export default function EmpfehlungenPage() {
         body: JSON.stringify({ id, status: newStatus }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || "Fehler beim Statuswechsel");
-        return;
+        // Revert on error
+        fetchData();
       }
-      fetchData();
     } catch {
-      alert("Netzwerkfehler");
+      fetchData();
     }
   }
 
@@ -165,28 +179,58 @@ export default function EmpfehlungenPage() {
 
   async function handleUpdateBetrag(emp: EmpfehlungWithHandwerker) {
     const value = parseFloat(editBetrag);
-    if (isNaN(value) || value <= 0) return;
-
-    const provisionProzent = emp.handwerker?.provision_prozent ?? 5;
-    const provisionBetrag = berechneProvision(value, provisionProzent);
+    if (isNaN(value) || value < 0) return;
 
     try {
-      // Use the complete endpoint to set betrag + status
-      const res = await fetch(`/api/referrals/${emp.id}/complete`, {
-        method: "POST",
+      const res = await fetch("/api/admin/empfehlungen", {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rechnungsbetrag: value }),
+        body: JSON.stringify({ id: emp.id, rechnungsbetrag: value }),
       });
 
       if (!res.ok) {
-        // If already completed, try direct PATCH approach
-        // For now, just alert
         const data = await res.json();
         alert(data.error || "Fehler beim Aktualisieren");
         return;
       }
 
       setEditingBetragId(null);
+      fetchData();
+    } catch {
+      alert("Netzwerkfehler");
+    }
+  }
+
+  function startEditing(emp: EmpfehlungWithHandwerker) {
+    setEditingId(emp.id);
+    setEditFields({
+      empfehler_name: emp.empfehler_name,
+      empfehler_email: emp.empfehler_email,
+      handwerker_id: emp.handwerker?.id ?? "",
+    });
+  }
+
+  async function saveEditing(empId: string) {
+    try {
+      const res = await fetch("/api/admin/empfehlungen", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: empId,
+          empfehler_name: editFields.empfehler_name,
+          empfehler_email: editFields.empfehler_email,
+          handwerker_id: editFields.handwerker_id,
+          kunde_name: handwerker.find((h) => h.id === editFields.handwerker_id)?.name ?? undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Fehler beim Speichern");
+        return;
+      }
+
+      setEditingId(null);
       fetchData();
     } catch {
       alert("Netzwerkfehler");
@@ -202,14 +246,16 @@ export default function EmpfehlungenPage() {
       .reduce((sum, e) => sum + (e.provision_betrag ?? 0), 0),
   };
 
+  const cellStyle = { padding: "14px 16px" };
+
   return (
     <div className="animate-fadeIn" style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h1 style={{ fontSize: "32px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
-          Empfehlungen
+          Affiliate
         </h1>
         <Button onClick={() => setShowForm(!showForm)} size="lg">
-          {showForm ? "Abbrechen" : "+ Neue Empfehlung"}
+          {showForm ? "Abbrechen" : "+ Neuer Affiliate"}
         </Button>
       </div>
 
@@ -234,7 +280,7 @@ export default function EmpfehlungenPage() {
             style={{ display: "flex", flexDirection: "column", gap: "18px" }}
           >
             <h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0, color: "var(--navy)" }}>
-              Neue Empfehlung erstellen
+              Neuen Affiliate erstellen
             </h2>
             {formError && (
               <div
@@ -253,26 +299,58 @@ export default function EmpfehlungenPage() {
             )}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "18px" }}>
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    color: "var(--navy)",
+                    marginBottom: "8px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  Partner
+                </label>
+                <select
+                  value={formData.handwerker_id}
+                  onChange={(e) => setFormData({ ...formData, handwerker_id: e.target.value })}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "14px 18px",
+                    border: "2px solid var(--border)",
+                    borderRadius: "14px",
+                    fontSize: "15px",
+                    fontWeight: 500,
+                    backgroundColor: "white",
+                    color: "var(--text)",
+                    cursor: "pointer",
+                  }}
+                >
+                  <option value="">Partner auswählen...</option>
+                  {handwerker.map((hw) => (
+                    <option key={hw.id} value={hw.id}>
+                      {hw.name} ({hw.provision_prozent}%)
+                    </option>
+                  ))}
+                </select>
+              </div>
               <Input
-                label="Kunde Name"
-                value={formData.kunde_name}
-                onChange={(e) => setFormData({ ...formData, kunde_name: e.target.value })}
-                required
-              />
-              <Input
-                label="Kunde Kontakt (optional)"
+                label="Kontakt (optional)"
                 value={formData.kunde_kontakt}
                 onChange={(e) => setFormData({ ...formData, kunde_kontakt: e.target.value })}
                 placeholder="E-Mail oder Telefon"
               />
               <Input
-                label="Empfehler Name"
+                label="Affiliate Name"
                 value={formData.empfehler_name}
                 onChange={(e) => setFormData({ ...formData, empfehler_name: e.target.value })}
                 required
               />
               <Input
-                label="Empfehler E-Mail (PayPal)"
+                label="Affiliate E-Mail (PayPal)"
                 type="email"
                 value={formData.empfehler_email}
                 onChange={(e) => setFormData({ ...formData, empfehler_email: e.target.value })}
@@ -280,47 +358,65 @@ export default function EmpfehlungenPage() {
               />
             </div>
 
-            <div>
-              <label
+            {/* Bankdaten Checkbox */}
+            <label
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                cursor: "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+                color: "var(--navy)",
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={showBankdaten}
+                onChange={(e) => setShowBankdaten(e.target.checked)}
                 style={{
-                  display: "block",
-                  fontSize: "13px",
-                  fontWeight: 700,
-                  color: "var(--navy)",
-                  marginBottom: "8px",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                Partner
-              </label>
-              <select
-                value={formData.handwerker_id}
-                onChange={(e) => setFormData({ ...formData, handwerker_id: e.target.value })}
-                required
-                style={{
-                  width: "100%",
-                  padding: "14px 18px",
-                  border: "2px solid var(--border)",
-                  borderRadius: "14px",
-                  fontSize: "15px",
-                  fontWeight: 500,
-                  backgroundColor: "white",
-                  color: "var(--text)",
+                  width: "20px",
+                  height: "20px",
+                  accentColor: "var(--orange)",
                   cursor: "pointer",
                 }}
+              />
+              Bankdaten hinzufügen
+            </label>
+
+            {showBankdaten && (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: "18px",
+                  padding: "18px",
+                  backgroundColor: "#f8f7f4",
+                  borderRadius: "14px",
+                  border: "2px solid var(--border)",
+                }}
               >
-                <option value="">Partner auswählen...</option>
-                {handwerker.map((hw) => (
-                  <option key={hw.id} value={hw.id}>
-                    {hw.name} ({hw.provision_prozent}%)
-                  </option>
-                ))}
-              </select>
-            </div>
+                <Input
+                  label="IBAN"
+                  placeholder="DE89 3704 0044 0532 0130 00"
+                />
+                <Input
+                  label="BIC"
+                  placeholder="COBADEFFXXX"
+                />
+                <Input
+                  label="Kontoinhaber"
+                  placeholder="Name des Kontoinhabers"
+                />
+                <Input
+                  label="Bank"
+                  placeholder="Name der Bank"
+                />
+              </div>
+            )}
 
             <Button type="submit" loading={formLoading} size="lg">
-              Empfehlung erstellen
+              Affiliate erstellen
             </Button>
           </form>
         </Card>
@@ -394,7 +490,7 @@ export default function EmpfehlungenPage() {
 
       {/* Table */}
       <Card style={{ padding: 0, overflow: "auto", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", tableLayout: "auto" }}>
           <thead>
             <tr
               style={{
@@ -402,12 +498,12 @@ export default function EmpfehlungenPage() {
                 background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
-              {["Kunde", "Empfehler", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
+              {["Affiliate", "Partner", "Provision %", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
                 (h) => (
                   <th
                     key={h}
                     style={{
-                      padding: "16px 18px",
+                      padding: "16px 16px",
                       fontWeight: 700,
                       color: "rgba(255,255,255,0.8)",
                       fontSize: "12px",
@@ -438,7 +534,7 @@ export default function EmpfehlungenPage() {
                   colSpan={9}
                   style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}
                 >
-                  Keine Empfehlungen gefunden
+                  Keine Einträge gefunden
                 </td>
               </tr>
             ) : (
@@ -451,26 +547,89 @@ export default function EmpfehlungenPage() {
                     transition: "background-color 0.15s ease",
                   }}
                 >
-                  <td style={{ padding: "16px 18px", fontWeight: 600 }}>
-                    {emp.kunde_name}
-                    {emp.kunde_kontakt && (
-                      <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 400 }}>
-                        {emp.kunde_kontakt}
+                  {/* Affiliate (Empfehler) */}
+                  <td style={{ ...cellStyle, fontWeight: 600 }}>
+                    {editingId === emp.id ? (
+                      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                        <input
+                          value={editFields.empfehler_name}
+                          onChange={(e) => setEditFields({ ...editFields, empfehler_name: e.target.value })}
+                          style={{
+                            padding: "6px 10px",
+                            border: "2px solid var(--orange)",
+                            borderRadius: "8px",
+                            fontSize: "13px",
+                            fontWeight: 600,
+                            width: "140px",
+                          }}
+                        />
+                        <input
+                          value={editFields.empfehler_email}
+                          onChange={(e) => setEditFields({ ...editFields, empfehler_email: e.target.value })}
+                          style={{
+                            padding: "6px 10px",
+                            border: "2px solid var(--border)",
+                            borderRadius: "8px",
+                            fontSize: "12px",
+                            width: "140px",
+                          }}
+                        />
                       </div>
+                    ) : (
+                      <>
+                        {emp.empfehler_name}
+                        <div style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 400 }}>
+                          {emp.empfehler_email}
+                        </div>
+                      </>
                     )}
                   </td>
-                  <td style={{ padding: "16px 18px" }}>
-                    {emp.empfehler_name}
-                    <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-                      {emp.empfehler_email}
-                    </div>
+
+                  {/* Partner */}
+                  <td style={cellStyle}>
+                    {editingId === emp.id ? (
+                      <select
+                        value={editFields.handwerker_id}
+                        onChange={(e) => setEditFields({ ...editFields, handwerker_id: e.target.value })}
+                        style={{
+                          padding: "6px 10px",
+                          border: "2px solid var(--orange)",
+                          borderRadius: "8px",
+                          fontSize: "13px",
+                          width: "120px",
+                        }}
+                      >
+                        {handwerker.map((hw) => (
+                          <option key={hw.id} value={hw.id}>
+                            {hw.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      emp.handwerker?.name ?? "–"
+                    )}
                   </td>
-                  <td style={{ padding: "16px 18px" }}>
-                    {emp.handwerker?.name ?? "–"}
+
+                  {/* Provision % */}
+                  <td style={cellStyle}>
+                    <span
+                      style={{
+                        background: "linear-gradient(135deg, #f28900, #ff6b00)",
+                        color: "white",
+                        padding: "4px 12px",
+                        borderRadius: "12px",
+                        fontSize: "13px",
+                        fontWeight: 700,
+                      }}
+                    >
+                      {emp.handwerker?.provision_prozent ?? "–"}%
+                    </span>
                   </td>
+
+                  {/* Ref */}
                   <td
                     style={{
-                      padding: "16px 18px",
+                      ...cellStyle,
                       fontFamily: "monospace",
                       fontSize: "12px",
                       color: "var(--blue)",
@@ -479,7 +638,9 @@ export default function EmpfehlungenPage() {
                   >
                     {emp.ref_code}
                   </td>
-                  <td style={{ padding: "16px 18px" }}>
+
+                  {/* Status */}
+                  <td style={cellStyle}>
                     <select
                       value={emp.status}
                       onChange={(e) => handleStatusChange(emp.id, e.target.value as EmpfehlungStatus)}
@@ -507,7 +668,9 @@ export default function EmpfehlungenPage() {
                       ))}
                     </select>
                   </td>
-                  <td style={{ padding: "16px 18px" }}>
+
+                  {/* Betrag */}
+                  <td style={cellStyle}>
                     {editingBetragId === emp.id ? (
                       <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
                         <input
@@ -524,18 +687,44 @@ export default function EmpfehlungenPage() {
                             fontSize: "14px",
                             fontWeight: 700,
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") handleUpdateBetrag(emp);
+                            if (e.key === "Escape") setEditingBetragId(null);
+                          }}
+                          autoFocus
                         />
-                        <Button size="sm" onClick={() => handleUpdateBetrag(emp)}>
-                          OK
-                        </Button>
-                        <Button size="sm" variant="ghost" onClick={() => setEditingBetragId(null)}>
-                          X
-                        </Button>
+                        <button
+                          onClick={() => handleUpdateBetrag(emp)}
+                          style={{
+                            background: "#16a34a",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "6px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Check size={14} color="white" />
+                        </button>
+                        <button
+                          onClick={() => setEditingBetragId(null)}
+                          style={{
+                            background: "var(--border)",
+                            border: "none",
+                            borderRadius: "8px",
+                            padding: "6px",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                          }}
+                        >
+                          <X size={14} color="var(--text-muted)" />
+                        </button>
                       </div>
                     ) : (
                       <button
                         onClick={() => {
-                          if (emp.status !== "offen") return;
                           setEditingBetragId(emp.id);
                           setEditBetrag(emp.rechnungsbetrag ? String(emp.rechnungsbetrag) : "");
                         }}
@@ -544,7 +733,7 @@ export default function EmpfehlungenPage() {
                             ? "linear-gradient(135deg, #f28900, #ff6b00)"
                             : "var(--border)",
                           border: "none",
-                          cursor: emp.status === "offen" ? "pointer" : "default",
+                          cursor: "pointer",
                           fontWeight: 700,
                           color: emp.rechnungsbetrag ? "white" : "var(--text-muted)",
                           padding: "6px 16px",
@@ -552,26 +741,95 @@ export default function EmpfehlungenPage() {
                           fontSize: "13px",
                           boxShadow: emp.rechnungsbetrag ? "0 2px 8px rgba(242,137,0,0.3)" : "none",
                         }}
-                        title={emp.status === "offen" ? "Klicke um Betrag einzutragen" : ""}
+                        title="Klicke um Betrag einzutragen"
                       >
                         {emp.rechnungsbetrag ? formatCurrency(emp.rechnungsbetrag) : "–"}
                       </button>
                     )}
                   </td>
-                  <td style={{ padding: "16px 18px", fontWeight: 700, color: "var(--green)" }}>
+
+                  {/* Provision */}
+                  <td style={{ ...cellStyle, fontWeight: 700, color: "var(--green)" }}>
                     {emp.provision_betrag ? formatCurrency(emp.provision_betrag) : "–"}
                   </td>
-                  <td style={{ padding: "16px 18px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
+
+                  {/* Datum */}
+                  <td style={{ ...cellStyle, whiteSpace: "nowrap", color: "var(--text-muted)" }}>
                     {formatDate(emp.created_at)}
                   </td>
-                  <td style={{ padding: "16px 18px" }}>
-                    <Button
-                      size="sm"
-                      variant="danger"
-                      onClick={() => handleDelete(emp)}
-                    >
-                      Löschen
-                    </Button>
+
+                  {/* Aktionen */}
+                  <td style={cellStyle}>
+                    <div style={{ display: "flex", gap: "6px" }}>
+                      {editingId === emp.id ? (
+                        <>
+                          <button
+                            onClick={() => saveEditing(emp.id)}
+                            style={{
+                              background: "#16a34a",
+                              border: "none",
+                              borderRadius: "10px",
+                              padding: "8px 14px",
+                              cursor: "pointer",
+                              color: "white",
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <Check size={14} /> Speichern
+                          </button>
+                          <button
+                            onClick={() => setEditingId(null)}
+                            style={{
+                              background: "var(--border)",
+                              border: "none",
+                              borderRadius: "10px",
+                              padding: "8px 14px",
+                              cursor: "pointer",
+                              color: "var(--text-muted)",
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <X size={14} /> Abbrechen
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => startEditing(emp)}
+                            style={{
+                              background: "linear-gradient(135deg, #050234, #0a0654)",
+                              border: "none",
+                              borderRadius: "10px",
+                              padding: "8px 14px",
+                              cursor: "pointer",
+                              color: "white",
+                              fontWeight: 700,
+                              fontSize: "12px",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "4px",
+                            }}
+                          >
+                            <Pencil size={14} /> Bearbeiten
+                          </button>
+                          <Button
+                            size="sm"
+                            variant="danger"
+                            onClick={() => handleDelete(emp)}
+                          >
+                            Löschen
+                          </Button>
+                        </>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

@@ -161,7 +161,7 @@ export default function AdminDashboardPage() {
                 background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
-              {["Kunde", "Empfehler", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum"].map(
+              {["Kunde", "Affiliate", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum"].map(
                 (h) => (
                   <th
                     key={h}

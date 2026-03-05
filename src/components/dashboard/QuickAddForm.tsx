@@ -100,7 +100,7 @@ export function QuickAddForm() {
       />
 
       <Input
-        label="Empfohlen von"
+        label="Affiliate Name"
         name="empfehler_name"
         required
         maxLength={120}

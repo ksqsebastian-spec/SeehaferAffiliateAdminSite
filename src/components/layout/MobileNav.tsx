@@ -28,7 +28,7 @@ export function MobileNav({ userName }: { userName: string }) {
       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
         <LayoutDashboard size={20} />
         <span style={{ fontWeight: 700, fontSize: "16px" }}>
-          Seehafer Empfehlungen
+          Seehafer Affiliate
         </span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
