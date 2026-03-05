@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, Copy, Check, X, CreditCard } from "lucide-react";
+import { Search, Copy, Check, X, CreditCard, ArrowLeft } from "lucide-react";
 import type { EmpfehlungWithHandwerker } from "@/types";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
@@ -101,6 +101,24 @@ export default function AuszahlungPage() {
         return;
       }
       setEditingBetragId(null);
+      fetchData();
+    } catch {
+      alert("Netzwerkfehler");
+    }
+  }
+
+  async function handleMoveBack(emp: EmpfehlungWithHandwerker) {
+    try {
+      const res = await fetch("/api/admin/empfehlungen", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: emp.id, status: "offen" }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.detail || data.error || "Fehler");
+        return;
+      }
       fetchData();
     } catch {
       alert("Netzwerkfehler");
@@ -299,17 +317,31 @@ export default function AuszahlungPage() {
                     <td style={{ ...cellStyle, whiteSpace: "nowrap", color: "var(--text-muted)" }}>{formatDate(emp.created_at)}</td>
 
                     <td style={cellStyle} onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => handleMarkAusgezahlt(emp)}
-                        style={{
-                          background: "linear-gradient(135deg, #16a34a, #15803d)",
-                          border: "none", borderRadius: "10px", padding: "8px 16px", cursor: "pointer",
-                          color: "white", fontWeight: 700, fontSize: "12px", display: "flex", alignItems: "center", gap: "6px",
-                          boxShadow: "0 2px 8px rgba(22,163,74,0.3)",
-                        }}
-                      >
-                        <CreditCard size={14} /> Ausgezahlt
-                      </button>
+                      <div style={{ display: "flex", gap: "6px" }}>
+                        <button
+                          onClick={() => handleMoveBack(emp)}
+                          style={{
+                            background: "linear-gradient(135deg, #ea580c, #c2410c)",
+                            border: "none", borderRadius: "10px", padding: "8px 12px", cursor: "pointer",
+                            color: "white", fontWeight: 700, fontSize: "12px", display: "flex", alignItems: "center", gap: "4px",
+                            boxShadow: "0 2px 8px rgba(234,88,12,0.3)",
+                          }}
+                          title="Zurück zu Affiliate (offen)"
+                        >
+                          <ArrowLeft size={14} /> Zurück
+                        </button>
+                        <button
+                          onClick={() => handleMarkAusgezahlt(emp)}
+                          style={{
+                            background: "linear-gradient(135deg, #16a34a, #15803d)",
+                            border: "none", borderRadius: "10px", padding: "8px 16px", cursor: "pointer",
+                            color: "white", fontWeight: 700, fontSize: "12px", display: "flex", alignItems: "center", gap: "6px",
+                            boxShadow: "0 2px 8px rgba(22,163,74,0.3)",
+                          }}
+                        >
+                          <CreditCard size={14} /> Ausgezahlt
+                        </button>
+                      </div>
                     </td>
                   </tr>
 
