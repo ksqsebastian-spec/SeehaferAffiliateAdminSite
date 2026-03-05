@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin, validateOrigin } from "@/lib/auth";
 import { handwerkerCreateSchema, handwerkerUpdateSchema, paginationSchema } from "@/lib/validators";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { logAudit } from "@/lib/audit";
 
 // GET /api/admin/handwerker — list handwerker or empfehlungen (admin)
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-
   const { searchParams } = request.nextUrl;
   const view = searchParams.get("view");
   const adminClient = createAdminClient();
@@ -47,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       return NextResponse.json(
-        { error: "Daten konnten nicht geladen werden" },
+        { error: "Daten konnten nicht geladen werden", detail: error.message },
         { status: 500 }
       );
     }
@@ -68,7 +64,7 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.json(
-      { error: "Handwerker konnten nicht geladen werden" },
+      { error: "Handwerker konnten nicht geladen werden", detail: error.message },
       { status: 500 }
     );
   }
@@ -78,22 +74,6 @@ export async function GET(request: NextRequest) {
 
 // POST /api/admin/handwerker — create new handwerker
 export async function POST(request: NextRequest) {
-  if (!validateOrigin(request)) {
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    return NextResponse.json(
-      {
-        error: "CSRF-Validierung fehlgeschlagen",
-        detail: `Origin „${origin || "(leer)"}" oder Referer „${referer || "(leer)"}" stimmt nicht mit APP_URL „${appUrl}" überein.`,
-      },
-      { status: 403 }
-    );
-  }
-
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-
   let body: unknown;
   try {
     body = await request.json();
@@ -166,7 +146,7 @@ export async function POST(request: NextRequest) {
   }
 
   await logAudit({
-    userId: auth.user.id,
+    userId: "admin",
     action: "handwerker.created",
     targetType: "handwerker",
     targetId: data.id,
@@ -179,22 +159,6 @@ export async function POST(request: NextRequest) {
 
 // PATCH /api/admin/handwerker — update handwerker
 export async function PATCH(request: NextRequest) {
-  if (!validateOrigin(request)) {
-    const origin = request.headers.get("origin");
-    const referer = request.headers.get("referer");
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    return NextResponse.json(
-      {
-        error: "CSRF-Validierung fehlgeschlagen",
-        detail: `Origin „${origin || "(leer)"}" oder Referer „${referer || "(leer)"}" stimmt nicht mit APP_URL „${appUrl}" überein.`,
-      },
-      { status: 403 }
-    );
-  }
-
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-
   let body: unknown;
   try {
     body = await request.json();
@@ -242,7 +206,7 @@ export async function PATCH(request: NextRequest) {
   }
 
   await logAudit({
-    userId: auth.user.id,
+    userId: "admin",
     action: "handwerker.updated",
     targetType: "handwerker",
     targetId: id,

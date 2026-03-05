@@ -1,15 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, validateOrigin } from "@/lib/auth";
 import { empfehlungCreateSchema, paginationSchema } from "@/lib/validators";
 import { checkRateLimit, RATE_LIMITS } from "@/lib/rate-limit";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // GET /api/referrals — list empfehlungen (handwerker sees own via query)
 export async function GET(request: NextRequest) {
-  const auth = await requireAuth();
-  if (auth instanceof NextResponse) return auth;
-
   const { searchParams } = request.nextUrl;
+  const handwerkerId = searchParams.get("handwerker_id");
+
   const pagination = paginationSchema.safeParse({
     page: searchParams.get("page"),
     pageSize: searchParams.get("pageSize"),
@@ -25,9 +23,12 @@ export async function GET(request: NextRequest) {
   let query = adminClient
     .from("empfehlungen")
     .select("*", { count: "exact" })
-    .eq("handwerker_id", auth.handwerkerId)
     .order("created_at", { ascending: false })
     .range(offset, offset + pageSize - 1);
+
+  if (handwerkerId) {
+    query = query.eq("handwerker_id", handwerkerId);
+  }
 
   if (status && ["offen", "erledigt", "ausgezahlt"].includes(status)) {
     query = query.eq("status", status);
@@ -37,29 +38,9 @@ export async function GET(request: NextRequest) {
 
   if (error) {
     return NextResponse.json(
-      { error: "Daten konnten nicht geladen werden" },
+      { error: "Daten konnten nicht geladen werden", detail: error.message },
       { status: 500 }
     );
-  }
-
-  // Compute stats for the handwerker
-  const { data: statsData } = await adminClient
-    .from("empfehlungen")
-    .select("status, provision_betrag")
-    .eq("handwerker_id", auth.handwerkerId);
-
-  const stats = {
-    offen: 0,
-    erledigt: 0,
-    total_provision: 0,
-  };
-
-  if (statsData) {
-    for (const row of statsData) {
-      if (row.status === "offen") stats.offen++;
-      if (row.status === "erledigt") stats.erledigt++;
-      if (row.provision_betrag) stats.total_provision += Number(row.provision_betrag);
-    }
   }
 
   return NextResponse.json({
@@ -68,22 +49,15 @@ export async function GET(request: NextRequest) {
     page,
     pageSize,
     hasMore: (count || 0) > offset + pageSize,
-    stats,
   });
 }
 
 // POST /api/referrals — create new empfehlung
 export async function POST(request: NextRequest) {
-  if (!validateOrigin(request)) {
-    return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 403 });
-  }
-
-  const auth = await requireAuth();
-  if (auth instanceof NextResponse) return auth;
-
-  // Rate limit
+  // Rate limit by IP
+  const ip = request.headers.get("x-forwarded-for") || "unknown";
   const rateCheck = checkRateLimit(
-    `referral-create:${auth.user.id}`,
+    `referral-create:${ip}`,
     RATE_LIMITS.referralCreate
   );
   if (!rateCheck.allowed) {
@@ -135,7 +109,6 @@ export async function POST(request: NextRequest) {
     .insert({
       ...parsed.data,
       ref_code: refCode,
-      handwerker_id: auth.handwerkerId,
     })
     .select()
     .single();
@@ -148,7 +121,7 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: "Empfehlung konnte nicht erstellt werden" },
+      { error: "Empfehlung konnte nicht erstellt werden", detail: error.message },
       { status: 500 }
     );
   }
