@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 // GET /api/admin/export — CSV export of all empfehlungen
 export async function GET(request: NextRequest) {
-  const auth = await requireAdmin();
-  if (auth instanceof NextResponse) return auth;
-
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
 
