@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Copy, ExternalLink, Check, Mail } from "lucide-react";
+import { Copy, Check, Mail, User, ArrowRight } from "lucide-react";
 import type { EmpfehlungWithHandwerker } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -82,79 +82,89 @@ export default function EmailConfiguratorPage() {
           E-Mail Konfigurator
         </h1>
         <p style={{ color: "var(--text-muted)", fontSize: "15px", margin: "10px 0 0 0", lineHeight: 1.6 }}>
-          Wähle eine Empfehlung aus, um die Auszahlungs-E-Mail zu generieren.
-          Kopiere den Text in Outlook oder öffne ihn direkt im Mail-Client.
+          Wähle eine Empfehlung, um die Auszahlungs-E-Mail zu generieren.
         </p>
       </div>
 
-      {/* Empfehlung selector */}
-      <Card style={{ borderRadius: "20px", padding: "24px", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
-        <label
-          style={{
-            fontSize: "12px",
-            fontWeight: 700,
-            color: "var(--orange)",
-            display: "block",
-            marginBottom: "10px",
-            textTransform: "uppercase",
-            letterSpacing: "1px",
-          }}
-        >
+      {/* Empfehlung cards */}
+      <div>
+        <div style={{ fontSize: "12px", fontWeight: 700, color: "var(--orange)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "14px" }}>
           Empfehlung auswählen
-        </label>
-        <select
-          value={selectedId}
-          onChange={(e) => setSelectedId(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "14px 18px",
-            fontSize: "15px",
-            border: "2px solid var(--border)",
-            borderRadius: "14px",
-            backgroundColor: "white",
-            fontWeight: 500,
-            color: "var(--text)",
-          }}
-        >
-          <option value="">-- Empfehlung wählen --</option>
-          {loading ? (
-            <option disabled>Laden...</option>
-          ) : (
-            empfehlungen.map((emp) => (
-              <option key={emp.id} value={emp.id}>
-                {emp.empfehler_name} → {emp.kunde_name} ({emp.ref_code})
-                {emp.provision_betrag ? ` – ${formatCurrency(emp.provision_betrag)}` : ""}
-              </option>
-            ))
-          )}
-        </select>
-      </Card>
+        </div>
 
-      {/* Selected empfehlung info */}
-      {selected && (
-        <Card
-          style={{
-            background: "linear-gradient(135deg, #eff6ff 0%, #e0f2fe 100%)",
-            borderLeft: "5px solid var(--blue)",
-            padding: "20px 24px",
-            borderRadius: "20px",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", alignItems: "center" }}>
-            <div style={{ fontWeight: 700, fontSize: "16px", color: "var(--navy)" }}>
-              An: {selected.empfehler_name} ({selected.empfehler_email})
-            </div>
-            <Badge status={selected.status} />
+        {loading ? (
+          <Card style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)", borderRadius: "20px" }}>
+            Laden...
+          </Card>
+        ) : empfehlungen.length === 0 ? (
+          <Card style={{ textAlign: "center", padding: "40px", color: "var(--text-muted)", borderRadius: "20px" }}>
+            Keine Empfehlungen mit Status &quot;erledigt&quot; oder &quot;ausgezahlt&quot; vorhanden.
+          </Card>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+            {empfehlungen.map((emp) => {
+              const isSelected = selectedId === emp.id;
+              return (
+                <button
+                  key={emp.id}
+                  onClick={() => setSelectedId(emp.id)}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "16px",
+                    padding: "16px 20px",
+                    borderRadius: "16px",
+                    border: isSelected ? "2px solid var(--orange)" : "2px solid var(--border)",
+                    backgroundColor: isSelected ? "var(--orange-bg)" : "white",
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.2s ease",
+                    boxShadow: isSelected ? "0 4px 16px rgba(242,137,0,0.15)" : "0 2px 8px rgba(0,0,0,0.03)",
+                    width: "100%",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "12px",
+                      background: isSelected ? "linear-gradient(135deg, #f28900, #ff6b00)" : "#f0eff8",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <User size={20} color={isSelected ? "white" : "var(--navy)"} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                      <span style={{ fontWeight: 700, fontSize: "15px", color: "var(--navy)" }}>
+                        {emp.empfehler_name}
+                      </span>
+                      <ArrowRight size={14} color="var(--text-muted)" />
+                      <span style={{ fontSize: "14px", color: "var(--text-muted)" }}>
+                        {emp.kunde_name}
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "4px" }}>
+                      <span style={{ fontFamily: "monospace", fontSize: "12px", color: "var(--blue)", fontWeight: 700, background: "var(--blue-bg)", padding: "2px 8px", borderRadius: "6px" }}>
+                        {emp.ref_code}
+                      </span>
+                      {emp.provision_betrag && (
+                        <span style={{ fontSize: "13px", fontWeight: 700, color: "var(--green)" }}>
+                          {formatCurrency(emp.provision_betrag)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <Badge status={emp.status} />
+                </button>
+              );
+            })}
           </div>
-          <div style={{ fontSize: "14px", color: "var(--text-muted)", marginTop: "8px" }}>
-            Kunde: {selected.kunde_name} | Ref:{" "}
-            <span style={{ fontFamily: "monospace", color: "var(--blue)", fontWeight: 700 }}>{selected.ref_code}</span>
-            {selected.provision_betrag && (
-              <> | Provision: <strong style={{ color: "var(--green)" }}>{formatCurrency(selected.provision_betrag)}</strong></>
-            )}
-          </div>
-        </Card>
-      )}
+        )}
+      </div>
 
       {/* Generated email */}
       {generatedEmail && selected && (
@@ -279,11 +289,11 @@ export default function EmailConfiguratorPage() {
         </Card>
       )}
 
-      {!selectedId && !loading && (
+      {!selectedId && !loading && empfehlungen.length > 0 && (
         <Card
           style={{
             textAlign: "center",
-            padding: "60px",
+            padding: "48px",
             color: "var(--text-muted)",
             fontSize: "16px",
             borderRadius: "20px",

@@ -35,7 +35,7 @@ export function DesktopSidebar() {
         <div style={{ fontSize: "22px", fontWeight: 800, color: "var(--orange)", letterSpacing: "-0.3px", lineHeight: 1.2 }}>
           SeehaferAffiliate
         </div>
-        <div style={{ fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.5)", marginTop: "4px", letterSpacing: "1px", textTransform: "uppercase" }}>
+        <div style={{ fontSize: "13px", fontWeight: 600, color: "rgba(255,255,255,0.85)", marginTop: "4px", letterSpacing: "1.5px", textTransform: "uppercase" }}>
           admin
         </div>
       </div>
