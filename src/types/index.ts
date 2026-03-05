@@ -5,6 +5,7 @@ export interface Handwerker {
   auth_user_id: string;
   name: string;
   email: string;
+  telefon: string | null;
   provision_prozent: number;
   active: boolean;
   created_at: string;
@@ -23,12 +24,16 @@ export interface Empfehlung {
   rechnungsbetrag: number | null;
   provision_betrag: number | null;
   ausgezahlt_am: string | null;
+  iban: string | null;
+  bic: string | null;
+  kontoinhaber: string | null;
+  bank_name: string | null;
   created_at: string;
   updated_at: string;
 }
 
 export interface EmpfehlungWithHandwerker extends Empfehlung {
-  handwerker: Pick<Handwerker, "id" | "name" | "email" | "provision_prozent">;
+  handwerker: Pick<Handwerker, "id" | "name" | "email" | "telefon" | "provision_prozent">;
 }
 
 export interface AuditLogEntry {
