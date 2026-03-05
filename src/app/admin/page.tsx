@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search } from "lucide-react";
+import { Search, ArrowRight } from "lucide-react";
 import type { EmpfehlungWithHandwerker, EmpfehlungStatus } from "@/types";
 import { StatCard } from "@/components/ui/StatCard";
 import { Badge } from "@/components/ui/Badge";
@@ -14,6 +14,12 @@ const STATUS_FILTERS: { label: string; value: EmpfehlungStatus | ""; color: stri
   { label: "Erledigt", value: "erledigt", color: "#16a34a", bg: "#f0fdf4" },
   { label: "Ausgezahlt", value: "ausgezahlt", color: "#2563eb", bg: "#eff6ff" },
 ];
+
+const NEXT_STATUS: Record<EmpfehlungStatus, { label: string; target: EmpfehlungStatus; color: string } | null> = {
+  offen: { label: "Zur Auszahlung", target: "erledigt", color: "#16a34a" },
+  erledigt: { label: "Ausgezahlt", target: "ausgezahlt", color: "#2563eb" },
+  ausgezahlt: null,
+};
 
 export default function AdminDashboardPage() {
   const [empfehlungen, setEmpfehlungen] = useState<EmpfehlungWithHandwerker[]>([]);
@@ -49,6 +55,27 @@ export default function AdminDashboardPage() {
     const debounce = setTimeout(fetchData, 300);
     return () => clearTimeout(debounce);
   }, [fetchData]);
+
+  async function handleMoveStatus(emp: EmpfehlungWithHandwerker) {
+    const next = NEXT_STATUS[emp.status];
+    if (!next) return;
+
+    try {
+      const res = await fetch("/api/admin/empfehlungen", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: emp.id, status: next.target }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.detail || data.error || "Fehler");
+        return;
+      }
+      fetchData();
+    } catch {
+      alert("Netzwerkfehler");
+    }
+  }
 
   const stats = {
     total: total,
@@ -161,7 +188,7 @@ export default function AdminDashboardPage() {
                 background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
-              {["Kunde", "Affiliate", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum"].map(
+              {["Kunde", "Affiliate", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
                 (h) => (
                   <th
                     key={h}
@@ -185,7 +212,7 @@ export default function AdminDashboardPage() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}
                 >
                   Laden...
@@ -194,7 +221,7 @@ export default function AdminDashboardPage() {
             ) : empfehlungen.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={9}
                   style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}
                 >
                   Keine Empfehlungen gefunden
@@ -241,6 +268,30 @@ export default function AdminDashboardPage() {
                   </td>
                   <td style={{ padding: "16px 18px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
                     {formatDate(emp.created_at)}
+                  </td>
+                  <td style={{ padding: "16px 18px" }}>
+                    {NEXT_STATUS[emp.status] && (
+                      <button
+                        onClick={() => handleMoveStatus(emp)}
+                        style={{
+                          background: `linear-gradient(135deg, ${NEXT_STATUS[emp.status]!.color}, ${NEXT_STATUS[emp.status]!.color}dd)`,
+                          border: "none",
+                          borderRadius: "10px",
+                          padding: "8px 14px",
+                          cursor: "pointer",
+                          color: "white",
+                          fontWeight: 700,
+                          fontSize: "12px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                          whiteSpace: "nowrap",
+                          boxShadow: `0 2px 8px ${NEXT_STATUS[emp.status]!.color}40`,
+                        }}
+                      >
+                        <ArrowRight size={14} /> {NEXT_STATUS[emp.status]!.label}
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))
