@@ -5,7 +5,6 @@ import { Copy, Check, Mail, User, ArrowRight } from "lucide-react";
 import type { EmpfehlungWithHandwerker } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Badge } from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
 import {
   generateAusgezahltEmail,
@@ -64,6 +63,24 @@ export default function EmailConfiguratorPage() {
       document.body.removeChild(textarea);
       setCopied(type);
       setTimeout(() => setCopied(null), 2000);
+    }
+  }
+
+  async function handleStatusChange(empId: string, newStatus: string) {
+    try {
+      const res = await fetch("/api/admin/empfehlungen", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: empId, status: newStatus }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.detail || data.error || "Fehler");
+        return;
+      }
+      fetchData();
+    } catch {
+      alert("Netzwerkfehler");
     }
   }
 
@@ -158,7 +175,34 @@ export default function EmailConfiguratorPage() {
                       )}
                     </div>
                   </div>
-                  <Badge status={emp.status} />
+                  <select
+                    value={emp.status}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      handleStatusChange(emp.id, e.target.value);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: 700,
+                      color: "white",
+                      backgroundColor: emp.status === "offen" ? "#ea580c" : emp.status === "erledigt" ? "#16a34a" : "#2563eb",
+                      padding: "6px 10px",
+                      borderRadius: "12px",
+                      border: "none",
+                      cursor: "pointer",
+                      appearance: "none",
+                      WebkitAppearance: "none",
+                      paddingRight: "24px",
+                      backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E")`,
+                      backgroundRepeat: "no-repeat",
+                      backgroundPosition: "right 6px center",
+                    }}
+                  >
+                    <option value="offen">OFFEN</option>
+                    <option value="erledigt">ERLEDIGT</option>
+                    <option value="ausgezahlt">AUSGEZAHLT</option>
+                  </select>
                 </button>
               );
             })}

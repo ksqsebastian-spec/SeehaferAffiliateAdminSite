@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Search, Archive } from "lucide-react";
+import { Search, Archive, ArrowLeft } from "lucide-react";
 import type { EmpfehlungWithHandwerker } from "@/types";
 import { StatCard } from "@/components/ui/StatCard";
 import { Card } from "@/components/ui/Card";
@@ -41,6 +41,24 @@ export default function ArchivPage() {
     return () => clearTimeout(debounce);
   }, [fetchData]);
 
+  async function handleMoveBack(emp: EmpfehlungWithHandwerker) {
+    try {
+      const res = await fetch("/api/admin/empfehlungen", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: emp.id, status: "erledigt" }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.detail || data.error || "Fehler");
+        return;
+      }
+      fetchData();
+    } catch {
+      alert("Netzwerkfehler");
+    }
+  }
+
   const totalProvision = empfehlungen.reduce((sum, e) => sum + (e.provision_betrag ?? 0), 0);
 
   const cellStyle = { padding: "14px 16px" };
@@ -73,7 +91,7 @@ export default function ArchivPage() {
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", tableLayout: "auto" }}>
           <thead>
             <tr style={{ textAlign: "left", background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)" }}>
-              {["Affiliate", "Kunde", "Ref", "Betrag", "Provision", "Ausgezahlt am", "Erstellt"].map((h) => (
+              {["Affiliate", "Kunde", "Ref", "Betrag", "Provision", "Ausgezahlt am", "Erstellt", "Aktionen"].map((h) => (
                 <th key={h} style={{ padding: "16px 16px", fontWeight: 700, color: "rgba(255,255,255,0.8)", fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.8px", whiteSpace: "nowrap" }}>
                   {h}
                 </th>
@@ -82,9 +100,9 @@ export default function ArchivPage() {
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={7} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Laden...</td></tr>
+              <tr><td colSpan={8} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Laden...</td></tr>
             ) : empfehlungen.length === 0 ? (
-              <tr><td colSpan={7} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Noch keine archivierten Einträge</td></tr>
+              <tr><td colSpan={8} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>Noch keine archivierten Einträge</td></tr>
             ) : (
               empfehlungen.map((emp, i) => (
                 <tr
@@ -138,6 +156,22 @@ export default function ArchivPage() {
                   {/* Erstellt */}
                   <td style={{ ...cellStyle, whiteSpace: "nowrap", color: "var(--text-muted)" }}>
                     {formatDate(emp.created_at)}
+                  </td>
+
+                  {/* Aktionen */}
+                  <td style={cellStyle}>
+                    <button
+                      onClick={() => handleMoveBack(emp)}
+                      style={{
+                        background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                        border: "none", borderRadius: "10px", padding: "8px 12px", cursor: "pointer",
+                        color: "white", fontWeight: 700, fontSize: "12px", display: "flex", alignItems: "center", gap: "4px",
+                        boxShadow: "0 2px 8px rgba(37,99,235,0.3)",
+                      }}
+                      title="Zurück zur Auszahlung"
+                    >
+                      <ArrowLeft size={14} /> Zur Auszahlung
+                    </button>
                   </td>
                 </tr>
               ))
