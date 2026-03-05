@@ -85,6 +85,39 @@ export default function PartnerPage() {
     }
   }
 
+  async function handleToggleStatus(hw: Handwerker) {
+    try {
+      await fetch("/api/admin/handwerker", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: hw.id, active: !hw.active }),
+      });
+      fetchData();
+    } catch {
+      // silent fail
+    }
+  }
+
+  async function handleDelete(hw: Handwerker) {
+    if (!confirm(`Partner "${hw.name}" wirklich löschen? Das kann nicht rückgängig gemacht werden.`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/admin/handwerker?id=${hw.id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Fehler beim Löschen");
+        return;
+      }
+      fetchData();
+    } catch {
+      alert("Netzwerkfehler");
+    }
+  }
+
   return (
     <div className="animate-fadeIn" style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
@@ -163,7 +196,7 @@ export default function PartnerPage() {
                 background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
-              {["Name", "E-Mail", "Provision %", "Status", "Erstellt"].map((h) => (
+              {["Name", "E-Mail", "Provision %", "Status", "Erstellt", "Aktionen"].map((h) => (
                 <th
                   key={h}
                   style={{
@@ -183,13 +216,13 @@ export default function PartnerPage() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={5} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>
+                <td colSpan={6} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>
                   Laden...
                 </td>
               </tr>
             ) : handwerker.length === 0 ? (
               <tr>
-                <td colSpan={5} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>
+                <td colSpan={6} style={{ padding: "48px", textAlign: "center", color: "var(--text-muted)", fontSize: "15px" }}>
                   Noch keine Partner angelegt
                 </td>
               </tr>
@@ -261,7 +294,8 @@ export default function PartnerPage() {
                     )}
                   </td>
                   <td style={{ padding: "16px 18px" }}>
-                    <span
+                    <button
+                      onClick={() => handleToggleStatus(hw)}
                       style={{
                         fontSize: "12px",
                         fontWeight: 700,
@@ -269,14 +303,26 @@ export default function PartnerPage() {
                         backgroundColor: hw.active ? "#16a34a" : "#dc2626",
                         padding: "6px 14px",
                         borderRadius: "16px",
+                        border: "none",
+                        cursor: "pointer",
                         boxShadow: hw.active ? "0 2px 8px rgba(22,163,74,0.3)" : "0 2px 8px rgba(220,38,38,0.3)",
                       }}
+                      title={hw.active ? "Klicke um zu deaktivieren" : "Klicke um zu aktivieren"}
                     >
                       {hw.active ? "AKTIV" : "INAKTIV"}
-                    </span>
+                    </button>
                   </td>
                   <td style={{ padding: "16px 18px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
                     {new Date(hw.created_at).toLocaleDateString("de-DE")}
+                  </td>
+                  <td style={{ padding: "16px 18px" }}>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDelete(hw)}
+                    >
+                      Löschen
+                    </Button>
                   </td>
                 </tr>
               ))

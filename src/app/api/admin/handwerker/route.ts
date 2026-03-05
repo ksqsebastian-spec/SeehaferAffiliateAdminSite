@@ -219,3 +219,58 @@ export async function PATCH(request: NextRequest) {
 
   return NextResponse.json(data);
 }
+
+// DELETE /api/admin/handwerker — delete handwerker
+export async function DELETE(request: NextRequest) {
+  const { searchParams } = request.nextUrl;
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ error: "ID erforderlich" }, { status: 400 });
+  }
+
+  const adminClient = createAdminClient();
+
+  // Get handwerker to find auth_user_id
+  const { data: hw, error: fetchError } = await adminClient
+    .from("handwerker")
+    .select("auth_user_id, name")
+    .eq("id", id)
+    .single();
+
+  if (fetchError || !hw) {
+    return NextResponse.json(
+      { error: "Handwerker nicht gefunden" },
+      { status: 404 }
+    );
+  }
+
+  // Delete handwerker record
+  const { error } = await adminClient
+    .from("handwerker")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    return NextResponse.json(
+      { error: "Handwerker konnte nicht gelöscht werden", detail: error.message },
+      { status: 500 }
+    );
+  }
+
+  // Clean up auth user
+  if (hw.auth_user_id) {
+    await adminClient.auth.admin.deleteUser(hw.auth_user_id);
+  }
+
+  await logAudit({
+    userId: "admin",
+    action: "handwerker.deleted",
+    targetType: "handwerker",
+    targetId: id,
+    details: { name: hw.name },
+    ipAddress: request.headers.get("x-forwarded-for"),
+  });
+
+  return NextResponse.json({ success: true });
+}
