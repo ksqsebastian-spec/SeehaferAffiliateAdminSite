@@ -9,10 +9,10 @@ import { Card } from "@/components/ui/Card";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 const STATUS_FILTERS: { label: string; value: EmpfehlungStatus | ""; color: string; bg: string }[] = [
-  { label: "Alle", value: "", color: "var(--navy)", bg: "white" },
-  { label: "Offen", value: "offen", color: "var(--orange)", bg: "var(--orange-bg)" },
-  { label: "Erledigt", value: "erledigt", color: "var(--green)", bg: "var(--green-bg)" },
-  { label: "Ausgezahlt", value: "ausgezahlt", color: "var(--blue)", bg: "var(--blue-bg)" },
+  { label: "Alle", value: "", color: "#050234", bg: "#f0eff8" },
+  { label: "Offen", value: "offen", color: "#ea580c", bg: "#fff7ed" },
+  { label: "Erledigt", value: "erledigt", color: "#16a34a", bg: "#f0fdf4" },
+  { label: "Ausgezahlt", value: "ausgezahlt", color: "#2563eb", bg: "#eff6ff" },
 ];
 
 export default function AdminDashboardPage() {
@@ -61,15 +61,15 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="animate-fadeIn" style={{ display: "flex", flexDirection: "column", gap: "32px" }}>
-      <h1 style={{ fontSize: "28px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
+      <h1 style={{ fontSize: "32px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
         Alle Empfehlungen
       </h1>
 
       {/* Stat Cards */}
       <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
-        <StatCard label="Gesamt" value={stats.total} bgColor="var(--blue-bg)" color="var(--blue)" />
-        <StatCard label="Offen" value={stats.offen} bgColor="var(--orange-bg)" color="var(--orange)" />
-        <StatCard label="Erledigt" value={stats.erledigt} bgColor="var(--green-bg)" color="var(--green)" />
+        <StatCard label="Gesamt" value={stats.total} bgColor="#eff6ff" color="#2563eb" />
+        <StatCard label="Offen" value={stats.offen} bgColor="#fff7ed" color="#ea580c" />
+        <StatCard label="Erledigt" value={stats.erledigt} bgColor="#f0fdf4" color="#16a34a" />
         <StatCard
           label="Provision"
           value={formatCurrency(stats.provision)}
@@ -87,13 +87,14 @@ export default function AdminDashboardPage() {
             display: "flex",
             alignItems: "center",
             gap: "10px",
-            padding: "12px 16px",
+            padding: "14px 18px",
             backgroundColor: "white",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius-sm)",
+            border: "2px solid var(--border)",
+            borderRadius: "14px",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
           }}
         >
-          <Search size={18} color="var(--text-muted)" />
+          <Search size={20} color="var(--orange)" />
           <input
             placeholder="Name, Ref-Code suchen..."
             value={search}
@@ -105,41 +106,46 @@ export default function AdminDashboardPage() {
               border: "none",
               outline: "none",
               flex: 1,
-              fontSize: "14px",
+              fontSize: "15px",
               backgroundColor: "transparent",
               color: "var(--text)",
+              fontWeight: 500,
             }}
           />
         </div>
 
         <div style={{ display: "flex", gap: "8px" }}>
-          {STATUS_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => {
-                setStatusFilter(f.value);
-                setPage(1);
-              }}
-              style={{
-                padding: "8px 18px",
-                borderRadius: "20px",
-                fontSize: "13px",
-                fontWeight: 600,
-                border: statusFilter === f.value ? `2px solid ${f.color}` : "2px solid transparent",
-                backgroundColor: statusFilter === f.value ? f.bg : "white",
-                color: statusFilter === f.value ? f.color : "var(--text-muted)",
-                cursor: "pointer",
-                transition: "all 0.2s ease",
-              }}
-            >
-              {f.label}
-            </button>
-          ))}
+          {STATUS_FILTERS.map((f) => {
+            const active = statusFilter === f.value;
+            return (
+              <button
+                key={f.value}
+                onClick={() => {
+                  setStatusFilter(f.value);
+                  setPage(1);
+                }}
+                style={{
+                  padding: "10px 22px",
+                  borderRadius: "24px",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  border: "none",
+                  backgroundColor: active ? f.color : "white",
+                  color: active ? "white" : f.color,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  boxShadow: active ? `0 4px 12px ${f.color}40` : "0 2px 6px rgba(0,0,0,0.06)",
+                }}
+              >
+                {f.label}
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Table */}
-      <Card style={{ padding: 0, overflow: "auto", borderRadius: "var(--radius)" }}>
+      <Card style={{ padding: 0, overflow: "auto", borderRadius: "20px", boxShadow: "0 4px 20px rgba(0,0,0,0.06)" }}>
         <table
           style={{
             width: "100%",
@@ -152,7 +158,7 @@ export default function AdminDashboardPage() {
               style={{
                 borderBottom: "2px solid var(--border)",
                 textAlign: "left",
-                backgroundColor: "#fafaf8",
+                background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
               {["Kunde", "Empfehler", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum"].map(
@@ -160,12 +166,12 @@ export default function AdminDashboardPage() {
                   <th
                     key={h}
                     style={{
-                      padding: "14px 18px",
+                      padding: "16px 18px",
                       fontWeight: 700,
-                      color: "var(--text-muted)",
+                      color: "rgba(255,255,255,0.8)",
                       fontSize: "12px",
                       textTransform: "uppercase",
-                      letterSpacing: "0.5px",
+                      letterSpacing: "0.8px",
                       whiteSpace: "nowrap",
                     }}
                   >
@@ -200,38 +206,40 @@ export default function AdminDashboardPage() {
                   key={emp.id}
                   style={{
                     borderBottom: "1px solid var(--border)",
-                    backgroundColor: i % 2 === 0 ? "white" : "#fafaf8",
+                    backgroundColor: i % 2 === 0 ? "white" : "#f8f7f4",
                     transition: "background-color 0.15s ease",
                   }}
                 >
-                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>
+                  <td style={{ padding: "16px 18px", fontWeight: 600 }}>
                     {emp.kunde_name}
                   </td>
-                  <td style={{ padding: "14px 18px" }}>{emp.empfehler_name}</td>
-                  <td style={{ padding: "14px 18px" }}>
+                  <td style={{ padding: "16px 18px" }}>{emp.empfehler_name}</td>
+                  <td style={{ padding: "16px 18px" }}>
                     {emp.handwerker?.name ?? "–"}
                   </td>
                   <td
                     style={{
-                      padding: "14px 18px",
+                      padding: "16px 18px",
                       fontFamily: "monospace",
                       fontSize: "12px",
-                      color: "var(--navy-light)",
-                      fontWeight: 600,
+                      color: "var(--blue)",
+                      fontWeight: 700,
+                      backgroundColor: "#eff6ff",
+                      borderRadius: "6px",
                     }}
                   >
                     {emp.ref_code}
                   </td>
-                  <td style={{ padding: "14px 18px" }}>
+                  <td style={{ padding: "16px 18px" }}>
                     <Badge status={emp.status} />
                   </td>
-                  <td style={{ padding: "14px 18px" }}>
+                  <td style={{ padding: "16px 18px" }}>
                     {emp.rechnungsbetrag ? formatCurrency(emp.rechnungsbetrag) : "–"}
                   </td>
-                  <td style={{ padding: "14px 18px", fontWeight: 600 }}>
+                  <td style={{ padding: "16px 18px", fontWeight: 700, color: "var(--green)" }}>
                     {emp.provision_betrag ? formatCurrency(emp.provision_betrag) : "–"}
                   </td>
-                  <td style={{ padding: "14px 18px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
+                  <td style={{ padding: "16px 18px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>
                     {formatDate(emp.created_at)}
                   </td>
                 </tr>
@@ -243,40 +251,42 @@ export default function AdminDashboardPage() {
 
       {/* Pagination */}
       {total > 25 && (
-        <div style={{ display: "flex", justifyContent: "center", gap: "8px", alignItems: "center" }}>
+        <div style={{ display: "flex", justifyContent: "center", gap: "10px", alignItems: "center" }}>
           <button
             disabled={page === 1}
             onClick={() => setPage((p) => p - 1)}
             style={{
-              padding: "10px 20px",
+              padding: "12px 24px",
               border: "none",
-              borderRadius: "20px",
-              backgroundColor: page === 1 ? "var(--border)" : "var(--navy)",
+              borderRadius: "24px",
+              background: page === 1 ? "var(--border)" : "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               color: page === 1 ? "var(--text-muted)" : "white",
               cursor: page === 1 ? "not-allowed" : "pointer",
-              fontWeight: 600,
-              fontSize: "13px",
+              fontWeight: 700,
+              fontSize: "14px",
               transition: "all 0.2s ease",
+              boxShadow: page === 1 ? "none" : "0 4px 12px rgba(5,2,52,0.2)",
             }}
           >
             Zurück
           </button>
-          <span style={{ padding: "8px 16px", fontSize: "14px", fontWeight: 600, color: "var(--text-muted)" }}>
+          <span style={{ padding: "8px 20px", fontSize: "15px", fontWeight: 700, color: "var(--navy)" }}>
             Seite {page} von {Math.ceil(total / 25)}
           </span>
           <button
             disabled={page * 25 >= total}
             onClick={() => setPage((p) => p + 1)}
             style={{
-              padding: "10px 20px",
+              padding: "12px 24px",
               border: "none",
-              borderRadius: "20px",
-              backgroundColor: page * 25 >= total ? "var(--border)" : "var(--navy)",
+              borderRadius: "24px",
+              background: page * 25 >= total ? "var(--border)" : "linear-gradient(135deg, #f28900 0%, #ff6b00 100%)",
               color: page * 25 >= total ? "var(--text-muted)" : "white",
               cursor: page * 25 >= total ? "not-allowed" : "pointer",
-              fontWeight: 600,
-              fontSize: "13px",
+              fontWeight: 700,
+              fontSize: "14px",
               transition: "all 0.2s ease",
+              boxShadow: page * 25 >= total ? "none" : "0 4px 12px rgba(242,137,0,0.3)",
             }}
           >
             Weiter

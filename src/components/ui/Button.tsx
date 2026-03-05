@@ -13,15 +13,15 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const sizeStyles: Record<ButtonSize, React.CSSProperties> = {
-  sm: { padding: "6px 12px", fontSize: "13px" },
-  md: { padding: "10px 20px", fontSize: "14px" },
-  lg: { padding: "14px 28px", fontSize: "16px" },
+  sm: { padding: "8px 16px", fontSize: "13px" },
+  md: { padding: "12px 24px", fontSize: "15px" },
+  lg: { padding: "16px 32px", fontSize: "17px" },
 };
 
 function getVariantStyle(variant: ButtonVariant): React.CSSProperties {
   const base: React.CSSProperties = {
-    borderRadius: "var(--radius-sm)",
-    fontWeight: 600,
+    borderRadius: "12px",
+    fontWeight: 700,
     cursor: "pointer",
     display: "inline-flex",
     alignItems: "center",
@@ -29,17 +29,42 @@ function getVariantStyle(variant: ButtonVariant): React.CSSProperties {
     gap: "8px",
     transition: "all 0.2s ease",
     whiteSpace: "nowrap",
+    letterSpacing: "-0.2px",
   };
 
   switch (variant) {
     case "primary":
-      return { ...base, backgroundColor: "var(--orange)", color: "white", border: "none" };
+      return {
+        ...base,
+        background: "linear-gradient(135deg, #f28900 0%, #ff6b00 100%)",
+        color: "white",
+        border: "none",
+        boxShadow: "0 4px 14px rgba(242, 137, 0, 0.4)",
+      };
     case "secondary":
-      return { ...base, backgroundColor: "white", color: "var(--text)", border: "1px solid var(--border)" };
+      return {
+        ...base,
+        backgroundColor: "var(--navy)",
+        color: "white",
+        border: "none",
+        boxShadow: "0 4px 14px rgba(5, 2, 52, 0.2)",
+      };
     case "danger":
-      return { ...base, backgroundColor: "var(--red)", color: "white", border: "none" };
+      return {
+        ...base,
+        background: "linear-gradient(135deg, #dc2626 0%, #b91c1c 100%)",
+        color: "white",
+        border: "none",
+        boxShadow: "0 4px 14px rgba(220, 38, 38, 0.3)",
+      };
     case "ghost":
-      return { ...base, backgroundColor: "transparent", color: "var(--text-muted)", border: "none" };
+      return {
+        ...base,
+        backgroundColor: "transparent",
+        color: "var(--text-muted)",
+        border: "none",
+        boxShadow: "none",
+      };
   }
 }
 

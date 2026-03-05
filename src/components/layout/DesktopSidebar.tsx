@@ -29,13 +29,15 @@ export function DesktopSidebar() {
       <div
         style={{
           padding: "32px 24px",
-          fontWeight: 800,
-          fontSize: "18px",
           borderBottom: "1px solid rgba(255,255,255,0.08)",
-          letterSpacing: "-0.3px",
         }}
       >
-        Seehafer Admin
+        <div style={{ fontSize: "22px", fontWeight: 800, color: "var(--orange)", letterSpacing: "-0.3px", lineHeight: 1.2 }}>
+          SeehaferAffiliate
+        </div>
+        <div style={{ fontSize: "13px", fontWeight: 500, color: "rgba(255,255,255,0.5)", marginTop: "4px", letterSpacing: "1px", textTransform: "uppercase" }}>
+          admin
+        </div>
       </div>
 
       <nav style={{ flex: 1, padding: "24px 12px" }}>
