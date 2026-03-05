@@ -51,7 +51,10 @@ export default function PartnerPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        setFormError(data.error || "Fehler beim Anlegen");
+        const msg = data.detail
+          ? `${data.error}: ${data.detail}`
+          : data.error || "Fehler beim Anlegen";
+        setFormError(msg);
         return;
       }
 

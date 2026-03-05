@@ -79,7 +79,16 @@ export async function GET(request: NextRequest) {
 // POST /api/admin/handwerker — create new handwerker
 export async function POST(request: NextRequest) {
   if (!validateOrigin(request)) {
-    return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 403 });
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    return NextResponse.json(
+      {
+        error: "CSRF-Validierung fehlgeschlagen",
+        detail: `Origin „${origin || "(leer)"}" oder Referer „${referer || "(leer)"}" stimmt nicht mit APP_URL „${appUrl}" überein.`,
+      },
+      { status: 403 }
+    );
   }
 
   const auth = await requireAdmin();
@@ -90,15 +99,18 @@ export async function POST(request: NextRequest) {
     body = await request.json();
   } catch {
     return NextResponse.json(
-      { error: "Ungültiger Request-Body" },
+      { error: "Ungültiger Request-Body — JSON konnte nicht gelesen werden." },
       { status: 400 }
     );
   }
 
   const parsed = handwerkerCreateSchema.safeParse(body);
   if (!parsed.success) {
+    const fieldErrors = parsed.error.issues.map(
+      (issue) => `${issue.path.join(".")}: ${issue.message}`
+    );
     return NextResponse.json(
-      { error: "Validierungsfehler", details: parsed.error.format() },
+      { error: "Validierungsfehler", detail: fieldErrors.join("; ") },
       { status: 400 }
     );
   }
@@ -121,7 +133,10 @@ export async function POST(request: NextRequest) {
       );
     }
     return NextResponse.json(
-      { error: "Auth-Benutzer konnte nicht erstellt werden" },
+      {
+        error: "Auth-Benutzer konnte nicht erstellt werden",
+        detail: authError.message,
+      },
       { status: 500 }
     );
   }
@@ -142,7 +157,10 @@ export async function POST(request: NextRequest) {
     // Clean up auth user if DB insert fails
     await adminClient.auth.admin.deleteUser(authUser.user.id);
     return NextResponse.json(
-      { error: "Handwerker konnte nicht erstellt werden" },
+      {
+        error: "Handwerker konnte nicht in DB erstellt werden",
+        detail: error.message,
+      },
       { status: 500 }
     );
   }
@@ -162,7 +180,16 @@ export async function POST(request: NextRequest) {
 // PATCH /api/admin/handwerker — update handwerker
 export async function PATCH(request: NextRequest) {
   if (!validateOrigin(request)) {
-    return NextResponse.json({ error: "Ungültige Anfrage" }, { status: 403 });
+    const origin = request.headers.get("origin");
+    const referer = request.headers.get("referer");
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    return NextResponse.json(
+      {
+        error: "CSRF-Validierung fehlgeschlagen",
+        detail: `Origin „${origin || "(leer)"}" oder Referer „${referer || "(leer)"}" stimmt nicht mit APP_URL „${appUrl}" überein.`,
+      },
+      { status: 403 }
+    );
   }
 
   const auth = await requireAdmin();
