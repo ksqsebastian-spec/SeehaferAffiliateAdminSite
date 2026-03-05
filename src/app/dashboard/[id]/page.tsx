@@ -67,7 +67,7 @@ export default async function EmpfehlungDetailPage({
               {empfehlung.kunde_name}
             </h2>
             <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "4px 0 0" }}>
-              empfohlen von {empfehlung.empfehler_name}
+              Affiliate: {empfehlung.empfehler_name}
             </p>
             <p style={{ color: "var(--text-muted)", fontSize: "13px", margin: "2px 0 0" }}>
               {empfehlung.empfehler_email}

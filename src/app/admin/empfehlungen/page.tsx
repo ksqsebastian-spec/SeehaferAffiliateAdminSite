@@ -266,13 +266,13 @@ export default function EmpfehlungenPage() {
                 placeholder="E-Mail oder Telefon"
               />
               <Input
-                label="Empfehler Name"
+                label="Affiliate Name"
                 value={formData.empfehler_name}
                 onChange={(e) => setFormData({ ...formData, empfehler_name: e.target.value })}
                 required
               />
               <Input
-                label="Empfehler E-Mail (PayPal)"
+                label="Affiliate E-Mail (PayPal)"
                 type="email"
                 value={formData.empfehler_email}
                 onChange={(e) => setFormData({ ...formData, empfehler_email: e.target.value })}
@@ -402,7 +402,7 @@ export default function EmpfehlungenPage() {
                 background: "linear-gradient(135deg, #050234 0%, #0a0654 100%)",
               }}
             >
-              {["Kunde", "Empfehler", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
+              {["Kunde", "Affiliate", "Partner", "Ref", "Status", "Betrag", "Provision", "Datum", "Aktionen"].map(
                 (h) => (
                   <th
                     key={h}

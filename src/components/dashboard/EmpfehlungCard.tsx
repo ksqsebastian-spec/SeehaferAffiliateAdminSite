@@ -59,7 +59,7 @@ export function EmpfehlungCard({ empfehlung, onClick }: EmpfehlungCardProps) {
           {empfehlung.kunde_name}
         </div>
         <div style={{ fontSize: "12px", color: "var(--text-muted)" }}>
-          empf. von {empfehlung.empfehler_name}
+          Affiliate: {empfehlung.empfehler_name}
         </div>
       </div>
       <div
