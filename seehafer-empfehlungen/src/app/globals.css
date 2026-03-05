@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #fbfaf5;
+  --bg-card: #ffffff;
+  --navy: #050234;
+  --navy-light: #062592;
+  --orange: #f28900;
+  --orange-hover: #e07e00;
+  --orange-bg: #fff7ed;
+  --text: #1a1a2e;
+  --text-muted: #8a8a9a;
+  --border: #ebe9e3;
+  --green: #16a34a;
+  --green-bg: #f0fdf4;
+  --blue: #2563eb;
+  --blue-bg: #eff6ff;
+  --red: #dc2626;
+  --red-bg: #fef2f2;
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow-card: 0 2px 12px rgba(5, 2, 52, 0.06);
+  --shadow-hover: 0 8px 24px rgba(5, 2, 52, 0.1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: "Inter", system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  margin: 0;
+}
+
+/* Utility animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
