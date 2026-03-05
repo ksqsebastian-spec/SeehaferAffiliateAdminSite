@@ -1,12 +1,7 @@
 // Email template generator — produces copy-pasteable text for Outlook/mail clients.
 // No automated sending; admin copies the output manually.
 
-export type EmailType = "erledigt" | "ausgezahlt";
-
-interface ErledigtParams {
-  empfehlerName: string;
-  refCode: string;
-}
+export type EmailType = "ausgezahlt";
 
 interface AusgezahltParams {
   empfehlerName: string;
@@ -22,27 +17,13 @@ function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
-export function generateErledigtEmail(params: ErledigtParams) {
-  return {
-    subject: "Deine Empfehlung wurde bestätigt ✓",
-    body: `Hey ${params.empfehlerName},
-
-gute Nachrichten! Der Auftrag, den du empfohlen hast (Ref: ${params.refCode}), wurde erfolgreich abgeschlossen.
-
-Deine Provision wird in Kürze ausgezahlt.
-
-Viele Grüße,
-Seehafer Elemente`,
-  };
-}
-
 export function generateAusgezahltEmail(params: AusgezahltParams) {
   // PRIVACY: Only show commission amount, never invoice total or percentage
   return {
     subject: "Deine Provision wurde ausgezahlt",
     body: `Hey ${params.empfehlerName},
 
-deine Provision für die Empfehlung (Ref: ${params.refCode}) in Höhe von ${formatCurrency(params.provisionBetrag)} wurde soeben an ${params.empfehlerEmail} via PayPal überwiesen.
+deine Provision für die Empfehlung (Ref: ${params.refCode}) in Höhe von ${formatCurrency(params.provisionBetrag)} wurde soeben überwiesen.
 
 Danke fürs Empfehlen!
 

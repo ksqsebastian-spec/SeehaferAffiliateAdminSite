@@ -18,13 +18,6 @@ export const empfehlungCompleteSchema = z.object({
     .max(999999, "Betrag zu hoch"),
 });
 
-export const payoutSchema = z.object({
-  empfehlung_ids: z
-    .array(z.uuid())
-    .min(1, "Mindestens eine Empfehlung auswählen")
-    .max(50, "Maximal 50 Empfehlungen pro Batch"),
-});
-
 export const handwerkerCreateSchema = z.object({
   name: z.string().min(1).max(120),
   email: z.email().max(200),

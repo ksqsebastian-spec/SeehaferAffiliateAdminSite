@@ -8,22 +8,18 @@ import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { formatCurrency } from "@/lib/utils";
 import {
-  generateErledigtEmail,
   generateAusgezahltEmail,
   generateMailtoLink,
-  type EmailType,
 } from "@/lib/email-templates";
 
 export default function EmailConfiguratorPage() {
   const [empfehlungen, setEmpfehlungen] = useState<EmpfehlungWithHandwerker[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string>("");
-  const [emailType, setEmailType] = useState<EmailType>("erledigt");
   const [copied, setCopied] = useState<"subject" | "body" | "all" | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
-      // Fetch empfehlungen that are erledigt or ausgezahlt (need emails for these)
       const res = await fetch("/api/admin/handwerker?view=empfehlungen&pageSize=100");
       if (!res.ok) throw new Error();
       const data = await res.json();
@@ -45,19 +41,13 @@ export default function EmailConfiguratorPage() {
 
   const selected = empfehlungen.find((e) => e.id === selectedId);
 
-  // Generate the email based on selection
   const generatedEmail = selected
-    ? emailType === "erledigt"
-      ? generateErledigtEmail({
-          empfehlerName: selected.empfehler_name,
-          refCode: selected.ref_code,
-        })
-      : generateAusgezahltEmail({
-          empfehlerName: selected.empfehler_name,
-          empfehlerEmail: selected.empfehler_email,
-          refCode: selected.ref_code,
-          provisionBetrag: selected.provision_betrag ?? 0,
-        })
+    ? generateAusgezahltEmail({
+        empfehlerName: selected.empfehler_name,
+        empfehlerEmail: selected.empfehler_email,
+        refCode: selected.ref_code,
+        provisionBetrag: selected.provision_betrag ?? 0,
+      })
     : null;
 
   async function copyToClipboard(text: string, type: "subject" | "body" | "all") {
@@ -66,7 +56,6 @@ export default function EmailConfiguratorPage() {
       setCopied(type);
       setTimeout(() => setCopied(null), 2000);
     } catch {
-      // Fallback for older browsers
       const textarea = document.createElement("textarea");
       textarea.value = text;
       document.body.appendChild(textarea);
@@ -86,87 +75,57 @@ export default function EmailConfiguratorPage() {
   return (
     <div
       className="animate-fadeIn"
-      style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+      style={{ display: "flex", flexDirection: "column", gap: "32px" }}
     >
-      <h1 style={{ fontSize: "22px", fontWeight: 800, margin: 0 }}>
-        E-Mail Konfigurator
-      </h1>
-      <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: 0 }}>
-        Wähle eine Empfehlung und den E-Mail-Typ. Kopiere den generierten Text
-        in Outlook oder öffne ihn direkt im Mail-Client.
-      </p>
+      <div>
+        <h1 style={{ fontSize: "28px", fontWeight: 800, margin: 0, color: "var(--navy)" }}>
+          E-Mail Konfigurator
+        </h1>
+        <p style={{ color: "var(--text-muted)", fontSize: "14px", margin: "8px 0 0 0" }}>
+          Wähle eine Empfehlung aus, um die Auszahlungs-E-Mail zu generieren. Kopiere den Text in Outlook oder öffne ihn direkt im Mail-Client.
+        </p>
+      </div>
 
-      {/* Selection row */}
-      <div style={{ display: "flex", gap: "16px", flexWrap: "wrap", alignItems: "flex-end" }}>
-        {/* Empfehlung selector */}
-        <div style={{ flex: 2, minWidth: "250px" }}>
-          <label
-            style={{
-              fontSize: "13px",
-              fontWeight: 500,
-              color: "var(--text-muted)",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
-            Empfehlung auswählen
-          </label>
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              fontSize: "14px",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-sm)",
-              backgroundColor: "white",
-            }}
-          >
-            <option value="">-- Empfehlung wählen --</option>
-            {loading ? (
-              <option disabled>Laden...</option>
-            ) : (
-              empfehlungen.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.empfehler_name} → {emp.kunde_name} ({emp.ref_code}) –{" "}
-                  {emp.status === "erledigt" ? "Erledigt" : "Ausgezahlt"}
-                  {emp.provision_betrag ? ` – ${formatCurrency(emp.provision_betrag)}` : ""}
-                </option>
-              ))
-            )}
-          </select>
-        </div>
-
-        {/* Email type selector */}
-        <div style={{ flex: 1, minWidth: "180px" }}>
-          <label
-            style={{
-              fontSize: "13px",
-              fontWeight: 500,
-              color: "var(--text-muted)",
-              display: "block",
-              marginBottom: "4px",
-            }}
-          >
-            E-Mail-Typ
-          </label>
-          <select
-            value={emailType}
-            onChange={(e) => setEmailType(e.target.value as EmailType)}
-            style={{
-              width: "100%",
-              padding: "10px 14px",
-              fontSize: "14px",
-              border: "1px solid var(--border)",
-              borderRadius: "var(--radius-sm)",
-              backgroundColor: "white",
-            }}
-          >
-            <option value="erledigt">Bestätigung (Job erledigt)</option>
-            <option value="ausgezahlt">Auszahlung erfolgt</option>
-          </select>
-        </div>
+      {/* Empfehlung selector */}
+      <div style={{ maxWidth: "500px" }}>
+        <label
+          style={{
+            fontSize: "12px",
+            fontWeight: 700,
+            color: "var(--text-muted)",
+            display: "block",
+            marginBottom: "6px",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          Empfehlung auswählen
+        </label>
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+          style={{
+            width: "100%",
+            padding: "12px 16px",
+            fontSize: "14px",
+            border: "2px solid var(--border)",
+            borderRadius: "var(--radius-sm)",
+            backgroundColor: "white",
+            fontWeight: 500,
+          }}
+        >
+          <option value="">-- Empfehlung wählen --</option>
+          {loading ? (
+            <option disabled>Laden...</option>
+          ) : (
+            empfehlungen.map((emp) => (
+              <option key={emp.id} value={emp.id}>
+                {emp.empfehler_name} → {emp.kunde_name} ({emp.ref_code})
+                {emp.provision_betrag ? ` – ${formatCurrency(emp.provision_betrag)}` : ""}
+              </option>
+            ))
+          )}
+        </select>
       </div>
 
       {/* Selected empfehlung info */}
@@ -174,20 +133,20 @@ export default function EmailConfiguratorPage() {
         <Card
           style={{
             backgroundColor: "var(--blue-bg)",
-            border: "1px solid var(--blue)",
-            padding: "16px",
+            borderLeft: "4px solid var(--blue)",
+            padding: "18px 20px",
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "8px" }}>
-            <div>
-              <strong>An:</strong> {selected.empfehler_name} ({selected.empfehler_email})
+            <div style={{ fontWeight: 600 }}>
+              An: {selected.empfehler_name} ({selected.empfehler_email})
             </div>
             <Badge status={selected.status} />
           </div>
-          <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
+          <div style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>
             Kunde: {selected.kunde_name} | Ref: {selected.ref_code}
             {selected.provision_betrag && (
-              <> | Provision: {formatCurrency(selected.provision_betrag)}</>
+              <> | Provision: <strong>{formatCurrency(selected.provision_betrag)}</strong></>
             )}
           </div>
         </Card>
@@ -195,22 +154,23 @@ export default function EmailConfiguratorPage() {
 
       {/* Generated email */}
       {generatedEmail && selected && (
-        <Card style={{ padding: 0 }}>
+        <Card style={{ padding: 0, borderRadius: "var(--radius)" }}>
           {/* Subject */}
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              padding: "16px 20px",
+              padding: "18px 22px",
               borderBottom: "1px solid var(--border)",
+              backgroundColor: "#fafaf8",
             }}
           >
             <div>
-              <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 500 }}>
-                BETREFF
+              <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Betreff
               </span>
-              <div style={{ fontSize: "14px", fontWeight: 600, marginTop: "2px" }}>
+              <div style={{ fontSize: "15px", fontWeight: 600, marginTop: "4px" }}>
                 {generatedEmail.subject}
               </div>
             </div>
@@ -225,17 +185,17 @@ export default function EmailConfiguratorPage() {
           </div>
 
           {/* Body */}
-          <div style={{ padding: "20px" }}>
+          <div style={{ padding: "22px" }}>
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "8px",
+                marginBottom: "10px",
               }}
             >
-              <span style={{ fontSize: "12px", color: "var(--text-muted)", fontWeight: 500 }}>
-                NACHRICHT
+              <span style={{ fontSize: "11px", color: "var(--text-muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                Nachricht
               </span>
               <Button
                 variant="ghost"
@@ -259,10 +219,10 @@ export default function EmailConfiguratorPage() {
                 whiteSpace: "pre-wrap",
                 fontFamily: "Inter, sans-serif",
                 fontSize: "14px",
-                lineHeight: 1.6,
+                lineHeight: 1.7,
                 color: "var(--text)",
                 backgroundColor: "var(--bg)",
-                padding: "16px",
+                padding: "20px",
                 borderRadius: "var(--radius-sm)",
                 border: "1px solid var(--border)",
                 margin: 0,
@@ -276,8 +236,8 @@ export default function EmailConfiguratorPage() {
           <div
             style={{
               display: "flex",
-              gap: "8px",
-              padding: "16px 20px",
+              gap: "10px",
+              padding: "18px 22px",
               borderTop: "1px solid var(--border)",
               flexWrap: "wrap",
             }}
@@ -289,6 +249,7 @@ export default function EmailConfiguratorPage() {
                   "all"
                 )
               }
+              style={{ borderRadius: "20px" }}
             >
               {copied === "all" ? (
                 <>
@@ -304,7 +265,7 @@ export default function EmailConfiguratorPage() {
               href={mailtoLink}
               style={{ textDecoration: "none" }}
             >
-              <Button variant="secondary">
+              <Button variant="secondary" style={{ borderRadius: "20px" }}>
                 <ExternalLink size={16} /> In Mail-App öffnen
               </Button>
             </a>
@@ -316,8 +277,9 @@ export default function EmailConfiguratorPage() {
         <Card
           style={{
             textAlign: "center",
-            padding: "40px",
+            padding: "48px",
             color: "var(--text-muted)",
+            fontSize: "15px",
           }}
         >
           Wähle oben eine Empfehlung aus, um die E-Mail zu generieren.

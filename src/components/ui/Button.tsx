@@ -12,17 +12,6 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-const variantStyles: Record<ButtonVariant, string> = {
-  primary:
-    "background-color: var(--orange); color: white; border: none; hover:background-color: var(--orange-hover);",
-  secondary:
-    "background-color: white; color: var(--text); border: 1px solid var(--border);",
-  danger:
-    "background-color: var(--red); color: white; border: none;",
-  ghost:
-    "background-color: transparent; color: var(--text-muted); border: none;",
-};
-
 const sizeStyles: Record<ButtonSize, React.CSSProperties> = {
   sm: { padding: "6px 12px", fontSize: "13px" },
   md: { padding: "10px 20px", fontSize: "14px" },

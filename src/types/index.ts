@@ -23,8 +23,6 @@ export interface Empfehlung {
   rechnungsbetrag: number | null;
   provision_betrag: number | null;
   ausgezahlt_am: string | null;
-  paypal_batch_id: string | null;
-  paypal_transaction_id: string | null;
   created_at: string;
   updated_at: string;
 }
