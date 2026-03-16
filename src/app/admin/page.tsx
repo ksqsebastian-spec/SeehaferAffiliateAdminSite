@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Search, ChevronDown, ChevronRight, ArrowRight, Check, X, Users } from "lucide-react";
 import type { EmpfehlungWithHandwerker, EmpfehlungStatus, Handwerker } from "@/types";
 import { StatCard } from "@/components/ui/StatCard";
@@ -61,7 +61,7 @@ export default function AdminDashboardPage() {
   }, [fetchData]);
 
   // Group empfehlungen by Kunde (handwerker)
-  const kundeGroups: KundeGroup[] = (() => {
+  const kundeGroups = useMemo(() => {
     const filtered = search
       ? empfehlungen.filter((e) => {
           const s = search.toLowerCase();
@@ -77,16 +77,18 @@ export default function AdminDashboardPage() {
     const map = new Map<string, KundeGroup>();
     for (const emp of filtered) {
       const key = emp.handwerker?.id ?? emp.handwerker_id;
-      if (!map.has(key)) {
+      const existing = map.get(key);
+      if (existing) {
+        existing.empfehlungen.push(emp);
+      } else {
         map.set(key, {
           handwerker: emp.handwerker ?? { id: key, name: emp.kunde_name, email: "", telefon: null, provision_prozent: 0 },
-          empfehlungen: [],
+          empfehlungen: [emp],
         });
       }
-      map.get(key)!.empfehlungen.push(emp);
     }
     return Array.from(map.values()).sort((a, b) => a.handwerker.name.localeCompare(b.handwerker.name));
-  })();
+  }, [empfehlungen, search]);
 
   function toggleKunde(id: string) {
     setExpandedKunden((prev) => {
@@ -127,11 +129,14 @@ export default function AdminDashboardPage() {
 
       // If marking as ausgezahlt, also archive the handwerker
       if (next.target === "ausgezahlt" && emp.handwerker?.id) {
-        await fetch("/api/admin/handwerker", {
+        const archiveRes = await fetch("/api/admin/handwerker", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id: emp.handwerker.id, active: false }),
         });
+        if (!archiveRes.ok) {
+          alert("Auszahlung erfolgreich, aber Kunde konnte nicht archiviert werden.");
+        }
       }
 
       fetchData();
@@ -182,14 +187,15 @@ export default function AdminDashboardPage() {
     }
   }
 
-  const stats = {
-    total: empfehlungen.length,
-    offen: empfehlungen.filter((e) => e.status === "offen").length,
-    erledigt: empfehlungen.filter((e) => e.status === "erledigt").length,
-    provision: empfehlungen
-      .filter((e) => e.provision_betrag)
-      .reduce((sum, e) => sum + (e.provision_betrag ?? 0), 0),
-  };
+  const stats = useMemo(() => {
+    let offen = 0, erledigt = 0, provision = 0;
+    for (const e of empfehlungen) {
+      if (e.status === "offen") offen++;
+      else if (e.status === "erledigt") erledigt++;
+      provision += e.provision_betrag ?? 0;
+    }
+    return { total: empfehlungen.length, offen, erledigt, provision };
+  }, [empfehlungen]);
 
   const cellStyle: React.CSSProperties = { padding: "12px 14px" };
 
@@ -572,28 +578,32 @@ export default function AdminDashboardPage() {
 
                             {/* Aktion */}
                             <td style={cellStyle}>
-                              {NEXT_STATUS[emp.status] && (
-                                <button
-                                  onClick={() => handleMoveStatus(emp)}
-                                  style={{
-                                    background: `linear-gradient(135deg, ${NEXT_STATUS[emp.status]!.color}, ${NEXT_STATUS[emp.status]!.color}dd)`,
-                                    border: "none",
-                                    borderRadius: "8px",
-                                    padding: "6px 12px",
-                                    cursor: "pointer",
-                                    color: "white",
-                                    fontWeight: 700,
-                                    fontSize: "11px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "4px",
-                                    whiteSpace: "nowrap",
-                                    boxShadow: `0 2px 6px ${NEXT_STATUS[emp.status]!.color}40`,
-                                  }}
-                                >
-                                  <ArrowRight size={12} /> {NEXT_STATUS[emp.status]!.label}
-                                </button>
-                              )}
+                              {(() => {
+                                const next = NEXT_STATUS[emp.status];
+                                if (!next) return null;
+                                return (
+                                  <button
+                                    onClick={() => handleMoveStatus(emp)}
+                                    style={{
+                                      background: `linear-gradient(135deg, ${next.color}, ${next.color}dd)`,
+                                      border: "none",
+                                      borderRadius: "8px",
+                                      padding: "6px 12px",
+                                      cursor: "pointer",
+                                      color: "white",
+                                      fontWeight: 700,
+                                      fontSize: "11px",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "4px",
+                                      whiteSpace: "nowrap",
+                                      boxShadow: `0 2px 6px ${next.color}40`,
+                                    }}
+                                  >
+                                    <ArrowRight size={12} /> {next.label}
+                                  </button>
+                                );
+                              })()}
                             </td>
                           </tr>
                         ))}
