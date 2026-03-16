@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { Copy, Check, Mail, User, ArrowRight } from "lucide-react";
+import { Copy, Check, Mail, User, ArrowRight, FileDown } from "lucide-react";
 import type { EmpfehlungWithHandwerker } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +10,7 @@ import {
   generateAusgezahltEmail,
   generateMailtoLink,
 } from "@/lib/email-templates";
+import { generateReceipt } from "@/lib/pdf-receipt";
 
 export default function EmailConfiguratorPage() {
   const [empfehlungen, setAffiliateen] = useState<EmpfehlungWithHandwerker[]>([]);
@@ -279,6 +280,19 @@ export default function EmailConfiguratorPage() {
                 <Mail size={18} /> In Mail-App öffnen
               </Button>
             </a>
+            <Button
+              variant="secondary"
+              size="lg"
+              onClick={() =>
+                generateReceipt({
+                  empfehlung: selected,
+                  emailSubject: generatedEmail.subject,
+                  emailBody: generatedEmail.body,
+                })
+              }
+            >
+              <FileDown size={18} /> Beleg herunterladen
+            </Button>
           </div>
         </Card>
       )}
