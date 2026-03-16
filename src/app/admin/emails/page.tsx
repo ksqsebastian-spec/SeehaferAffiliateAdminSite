@@ -283,13 +283,17 @@ export default function EmailConfiguratorPage() {
             <Button
               variant="secondary"
               size="lg"
-              onClick={() =>
-                generateReceipt({
-                  empfehlung: selected,
-                  emailSubject: generatedEmail.subject,
-                  emailBody: generatedEmail.body,
-                })
-              }
+              onClick={async () => {
+                try {
+                  await generateReceipt({
+                    empfehlung: selected,
+                    emailSubject: generatedEmail.subject,
+                    emailBody: generatedEmail.body,
+                  });
+                } catch {
+                  alert("Fehler beim Erstellen des Belegs");
+                }
+              }}
             >
               <FileDown size={18} /> Beleg herunterladen
             </Button>
